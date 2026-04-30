@@ -1,0 +1,47 @@
+{
+  "name": "@mcptoolshop/rig-bridge",
+  "version": "0.0.1-pre-swarm",
+  "description": "Cross-rig sync tool for paired dev machines — git-native typed-envelope cross-agent handoffs",
+  "type": "module",
+  "bin": {
+    "rig-bridge": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md",
+    "ARCHITECTURE.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "mcp-tool-shop",
+    "rig-bridge",
+    "cross-rig",
+    "handoff",
+    "git",
+    "agent"
+  ],
+  "author": "mcp-tool-shop <64996768+mcp-tool-shop@users.noreply.github.com>",
+  "license": "MIT",
+  "homepage": "https://mcp-tool-shop-org.github.io/rig-bridge/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcp-tool-shop-org/rig-bridge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mcp-tool-shop-org/rig-bridge/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "@types/node": "^22.0.0"
+  }
+}

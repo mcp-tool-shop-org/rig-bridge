@@ -1,0 +1,21 @@
+node_modules/
+dist/
+coverage/
+.vitest-cache/
+*.log
+*.tsbuildinfo
+
+# Editor / OS junk
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+.idea/
+.vscode/
+
+# Local env
+.env
+.env.local
+.bridge/config.yaml
