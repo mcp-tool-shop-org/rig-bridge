@@ -1,6 +1,13 @@
 # Control-Plane Integration
 
-> **Status:** Phase 0 design — Envelope Design Wave (2026-04-29). Companion to `docs/envelope-spec.md` and `schemas/bridge-message.schema.json`. Records the writes-through path between rig-bridge (cross-rig git transport) and `swarm-control-plane` (the SQLite truth layer in `@dogfood-lab/dogfood-swarm`).
+> **Status: Design forward — implementation deferred to v1.1.**
+> v1.0.0 ships the git transport (envelope validation, body_hash, marker→status_class derivation, canonical rig-id ingress, the 4 CLI commands `init`/`new`/`send`/`close`) WITHOUT control-plane integration. The 14-commit corpus that motivated rig-bridge had zero swarm-control-plane integration; v1.0.0 ships exactly the thing that proved its own need.
+>
+> v1.0.0 does NOT contain code that touches `bridge_messages` or `bridge_message_events`. Those tables are not yet migrated into `@dogfood-lab/dogfood-swarm`'s SCHEMA_VERSION 4. The integration is a v1.1 feature delta, triggered when testing-os next ships a schema bump (coupling-driven, not calendar-driven). See `docs/v1.1-roadmap.md`.
+>
+> This document remains in the repo as the canonical forward design. Every decision below is locked in; only the implementation is staged.
+
+> **Phase 0 design provenance:** Envelope Design Wave (2026-04-29). Companion to `docs/envelope-spec.md` and `schemas/bridge-message.schema.json`. Records the writes-through path between rig-bridge (cross-rig git transport) and `swarm-control-plane` (the SQLite truth layer in `@dogfood-lab/dogfood-swarm`).
 
 ## 1. Architectural framing
 
