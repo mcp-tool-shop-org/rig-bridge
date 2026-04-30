@@ -8,11 +8,38 @@
 //   * Installs a placeholder commit-message hook at .git/hooks/commit-msg.
 //     v1.0.0 keeps this a no-op; v1.1 may add real validation.
 
-import { existsSync, mkdirSync, writeFileSync, chmodSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import { isGitRepo, repoRoot } from "../engine/git.js";
 import { writeConfig, configPath } from "../engine/config.js";
 import { validateRigId } from "../engine/rig-id.js";
+
+/**
+ * Decide whether to print the .bridge/ gitignore hint.
+ *
+ * F-002 (dogfood-friction.md, 2026-04-30): operators leave `init` with an
+ * untracked `.bridge/config.yaml` and have to figure out whether to commit
+ * it or ignore it. Print a one-line hint when neither outcome is already
+ * settled.
+ *
+ * Returns true when a hint is warranted: there's a `.gitignore` at the
+ * repo root that does NOT exclude `.bridge`. (No `.gitignore` at all is
+ * fine — committing the config is a reasonable default.)
+ */
+export function shouldPrintBridgeIgnoreHint(repoRootPath: string): boolean {
+  const gitignorePath = join(repoRootPath, ".gitignore");
+  if (!existsSync(gitignorePath)) return false;
+  const lines = readFileSync(gitignorePath, "utf8")
+    .split("\n")
+    .map((l) => l.trim());
+  return !lines.some((l) =>
+    l === ".bridge" ||
+    l === ".bridge/" ||
+    l === ".bridge/*" ||
+    l === ".bridge/config.yaml" ||
+    l === ".bridge/config.yml",
+  );
+}
 
 export interface InitArgs {
   cwd: string;
@@ -77,5 +104,10 @@ export function runInit(args: InitArgs): InitResult {
   stdout(`rig-bridge: initialized\n`);
   stdout(`  config: ${configPath(root)}\n`);
   stdout(`  hook:   ${hookPath}\n`);
+  if (shouldPrintBridgeIgnoreHint(root)) {
+    stdout(
+      `note: .bridge/config.yaml is untracked — commit it or add \`.bridge/\` to .gitignore\n`,
+    );
+  }
   return { configPath: cfgPath, hookPath };
 }

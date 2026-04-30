@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
-import { runInit } from "./init.js";
+import { runInit, shouldPrintBridgeIgnoreHint } from "./init.js";
 import { configPath } from "../engine/config.js";
 
 let dir: string;
@@ -68,5 +68,54 @@ describe("runInit", () => {
     });
     const cfgText = readFileSync(configPath(dir), "utf8");
     expect(cfgText).toContain("windows-5080");
+  });
+
+  // F-002 (dogfood-friction.md, 2026-04-30): operators were left with an
+  // untracked .bridge/config.yaml after init when the repo had a .gitignore
+  // that didn't cover .bridge/. Print a one-line hint when that's the case.
+  it("prints a gitignore hint when .gitignore exists but doesn't exclude .bridge/", () => {
+    writeFileSync(join(dir, ".gitignore"), "node_modules/\ndist/\n", "utf8");
+    const out: string[] = [];
+    runInit({ cwd: dir, rigId: "mac-m5max", stdout: (s) => out.push(s) });
+    const joined = out.join("");
+    expect(joined).toContain(".bridge/config.yaml is untracked");
+    expect(joined).toContain(".gitignore");
+  });
+
+  it("does NOT print the gitignore hint when .gitignore already excludes .bridge/", () => {
+    writeFileSync(join(dir, ".gitignore"), "node_modules/\n.bridge/\n", "utf8");
+    const out: string[] = [];
+    runInit({ cwd: dir, rigId: "mac-m5max", stdout: (s) => out.push(s) });
+    expect(out.join("")).not.toContain("untracked");
+  });
+
+  it("does NOT print the gitignore hint when there's no .gitignore at all (committing the config is reasonable)", () => {
+    const out: string[] = [];
+    runInit({ cwd: dir, rigId: "mac-m5max", stdout: (s) => out.push(s) });
+    expect(out.join("")).not.toContain("untracked");
+  });
+});
+
+describe("shouldPrintBridgeIgnoreHint", () => {
+  let d: string;
+  beforeEach(() => {
+    d = mkdtempSync(join(tmpdir(), "rig-bridge-hint-"));
+    return () => rmSync(d, { recursive: true, force: true });
+  });
+
+  it("returns false when .gitignore is absent", () => {
+    expect(shouldPrintBridgeIgnoreHint(d)).toBe(false);
+  });
+
+  it("returns true when .gitignore exists but doesn't cover .bridge/", () => {
+    writeFileSync(join(d, ".gitignore"), "node_modules/\n", "utf8");
+    expect(shouldPrintBridgeIgnoreHint(d)).toBe(true);
+  });
+
+  it("returns false when .gitignore covers .bridge/ via any common form", () => {
+    for (const line of [".bridge", ".bridge/", ".bridge/*", ".bridge/config.yaml", ".bridge/config.yml"]) {
+      writeFileSync(join(d, ".gitignore"), `${line}\n`, "utf8");
+      expect(shouldPrintBridgeIgnoreHint(d)).toBe(false);
+    }
   });
 });
