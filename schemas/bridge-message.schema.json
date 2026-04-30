@@ -9,10 +9,10 @@
   "properties": {
     "from": {
       "$ref": "#/$defs/rigIdentifier",
-      "description": "Rig identifier of the sender. Free-form string; canonical shapes are 'Mac Claude', '5080 Claude', '<rig> Claude', and 'Mike (relay)' (or any human author with a (relay) suffix when their input is being relayed in-band)."
+      "description": "Canonical rig identifier of the sender — kebab-case slug (e.g. 'mac-m5max', 'windows-5080'). For human relay, use a kebab-case slug with the '-relay' suffix (e.g. 'mike-relay'). The optional 'display_name' field carries the human-readable form for prose contexts. See docs/envelope-spec.md §3.4."
     },
     "to": {
-      "description": "One or more recipient rig identifiers. May be a single string or a non-empty array (the corpus uses arrays for messages addressed to peer + human together, e.g. ['Mac Claude', 'Mike']).",
+      "description": "One or more recipient canonical rig identifiers. May be a single string or a non-empty array (the corpus uses arrays for messages addressed to peer + human together).",
       "oneOf": [
         { "$ref": "#/$defs/rigIdentifier" },
         {
@@ -28,7 +28,7 @@
     },
     "status": {
       "$ref": "#/$defs/status",
-      "description": "Status verb-phrase. MUST begin with one of five lifecycle markers (▶ ⏸ 🎯 ✅ ❌) followed by a free-prose description. The marker is the schema-enforced part; the prose is intentionally open so authors can compress nuance the corpus showed they routinely express."
+      "description": "Status verb-phrase. MUST begin with one of five lifecycle markers (▶ ⏸ 🎯 ✅ ❌) followed by a free-prose description. The marker is the schema-enforced part; the prose is intentionally open so authors can compress nuance the corpus showed they routinely express. NOTE: this is the envelope-side OPEN verb-prose status. The control-plane derives a closed-enum status_class from the marker — see docs/control-plane-integration.md §4."
     },
     "type": {
       "$ref": "#/$defs/messageType",
@@ -39,6 +39,12 @@
       "minLength": 1,
       "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
       "description": "Thread identifier — the kebab-case slug that names the per-thread directory at the bridge root. MUST match the parent directory of the message file. Lowercase, kebab-case, may contain digits."
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Optional human-readable rig name (e.g. 'Mac Claude', '5080 Claude'). Used by prose body greetings/sign-offs and operator-facing tooling. Not stored as its own control-plane column for v1.0.0 — embed in the message body if visibility matters. See docs/envelope-spec.md §3.4."
     },
     "tldr": {
       "type": "string",
@@ -52,7 +58,7 @@
       "items": {
         "type": "string",
         "pattern": "^[0-9a-f]{7,40}$",
-        "description": "A git commit SHA (short ≥7 hex chars or full 40 hex chars) identifying a prior turn this message answers, corrects, or extends. Becomes the foreign key the SQLite control plane joins on."
+        "description": "A git commit SHA (short ≥7 hex chars or full 40 hex chars) identifying a prior turn this message answers, corrects, or extends. Becomes the foreign key the SQLite control-plane joins on."
       },
       "description": "Commit SHAs of prior turns. Authors should reference the immediate prior turn, any earlier turn whose claims they're correcting, and the thread's opening REQUEST when relevant."
     }
@@ -61,7 +67,8 @@
     "rigIdentifier": {
       "type": "string",
       "minLength": 1,
-      "description": "A rig identifier names a participant in a rig-bridge thread. Free-form for v1.0.0 — no enum, so adding a third rig later does not require a schema bump. Canonical shapes are documented in docs/envelope-spec.md §3.4."
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Canonical rig identifier — lowercase kebab-case slug starting with a letter (e.g. 'mac-m5max', 'windows-5080', 'mike-relay'). The schema enforces shape, not membership: adding a third rig later does not require a schema bump. Human-readable display names live in the optional 'display_name' field. Pre-v1.0.0 corpus messages used title-case display names ('Mac Claude') and will not validate against v1.0.0; see docs/envelope-spec.md §3.4."
     },
     "iso8601": {
       "type": "string",
@@ -88,7 +95,7 @@
         "VERIFY",
         "DECISIONS"
       ],
-      "description": "The ten message types observed in the source corpus. REQUEST: asker spec — opens a thread. HANDOFF: reply with payload OR counter-proposal that re-shapes the request. RESPONSE: targeted reply that introduces new content. ACK: acknowledgement confirming alignment without new asks. RESOLUTION: terminal close-out for the thread. STATE: inventory snapshot — context, not action. RESULT: output of a delegated action (clone batch, scan, build). RECOVERY: unexpected positive finding that changes the loss/gain footprint. VERIFY: independent peer verification of a prior claim. DECISIONS: human input relayed in-band (the documented escalation pattern)."
+      "description": "The ten message types observed in the source corpus, listed in lifecycle order. REQUEST: asker spec — opens a thread. HANDOFF: reply with payload OR counter-proposal that re-shapes the request. RESPONSE: targeted reply that introduces new content. ACK: acknowledgement confirming alignment without new asks. RESOLUTION: terminal close-out for the thread. STATE: inventory snapshot — context, not action. RESULT: output of a delegated action (clone batch, scan, build). RECOVERY: unexpected positive finding that changes the loss/gain footprint. VERIFY: independent peer verification of a prior claim. DECISIONS: human input relayed in-band (the documented escalation pattern)."
     }
   }
 }

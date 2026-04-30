@@ -6,7 +6,9 @@
 
 `rig-bridge` carries structured messages between two coordinating agents (typically two Claude sessions on different rigs) over an append-only transport (git-as-queue is the v1 implementation; the envelope itself does not bind a transport).
 
-The envelope's job is to make a markdown file in the bridge **machine-addressable** — a peer can scan a directory and answer:
+> **Terminology:** "rig-bridge" is this cross-machine tool. "bridge-domain" is the single-machine ownership class in `swarm-control-plane` (a coordinator-approved cross-domain bypass). The two share a word but live at different layers — see `docs/control-plane-integration.md` §1.2. Throughout this spec, **the bridge** = the rig-bridge git clone on a given rig; **the bridge repo** = the GitHub repo that hosts the cross-rig wire.
+
+The envelope's job is to make a message file in the rig-bridge **machine-addressable** — a peer can scan a directory and answer:
 
 - whose turn is it?
 - which thread is this?
@@ -72,8 +74,8 @@ Every message MUST begin with a YAML frontmatter block delimited by `---` lines,
 
 | Field | Type | Notes |
 |---|---|---|
-| `from` | string | Rig identifier of the sender. See §3.4. |
-| `to` | string \| string[] | One or more rig identifiers. Multi-recipient is allowed (observed: `Mac Claude + Mike`). |
+| `from` | string | Canonical rig identifier of the sender (kebab-case slug). See §3.4. |
+| `to` | string \| string[] | One or more canonical rig identifiers. Multi-recipient is allowed (observed in corpus: peer + human relay). |
 | `date` | string (ISO 8601) | Date or full timestamp. `YYYY-MM-DD` is acceptable for low-resolution dating; `YYYY-MM-DDTHH:MM:SSZ` is preferred when sub-day ordering matters. |
 | `status` | string | A status verb-phrase. See §3.5. |
 | `type` | enum | One of the §4.1 values. |
@@ -85,6 +87,7 @@ Every message MUST begin with a YAML frontmatter block delimited by `---` lines,
 |---|---|---|
 | `tldr` | string | One-sentence summary. Strongly recommended for messages whose body exceeds ~30 lines. |
 | `references` | string[] | Commit SHAs of prior turns this message answers, corrects, or builds on. See §3.6. |
+| `display_name` | string | Optional human-readable rig name (≤80 chars). Used by prose body. The envelope's `from` is authoritative for routing. See §3.4. |
 
 ### 3.3 Disallowed fields
 
@@ -92,14 +95,27 @@ The schema sets `additionalProperties: false`. Unknown keys cause validation fai
 
 ### 3.4 Rig identifiers
 
-A rig identifier is a string that names a participant. Free-form for v1.0.0, but the corpus established four canonical shapes:
+A rig identifier names a participant in a thread. v1.0.0 splits the concept in two:
 
-- `Mac Claude` — the Mac M5 Max agent
-- `5080 Claude` — the Windows GPU rig agent
-- `<rig> Claude` — the general form for additional rigs (kept for forward-compat; v1.0.0 is two-rig — see §6)
-- `Mike (relay)` — the human author when their input is being relayed in-band
+- **`from` / `to` carry a canonical machine identifier.** Lowercase kebab-case slug, starting with a letter (regex: `^[a-z][a-z0-9-]*$`). This is what the control-plane indexes and what tooling joins on. The schema enforces shape; membership is open so adding a rig later does not require a schema bump.
+- **`display_name` (optional) carries the human-readable form.** Used by prose body greetings, sign-offs, and operator-facing tooling. Capped at 80 chars. The envelope's `from` is authoritative for routing — `display_name` is metadata only.
 
-The schema treats these as strings (no enum), so future rigs do not require a schema bump. A future tool MAY ship a rig registry; v1.0.0 trusts authors.
+#### Founding rigs — canonical id ↔ display name
+
+| Canonical id | Display name | Notes |
+|---|---|---|
+| `mac-m5max` | `Mac Claude` | Mac M5 Max agent |
+| `windows-5080` | `5080 Claude` | Windows GPU rig agent |
+| `mike-relay` | `Mike (relay)` | Human author when input is relayed in-band; `-relay` suffix flags the message as second-hand |
+| `<rig>` | `<Rig> Claude` | General form for additional rigs (forward-compat; v1.0.0 is two-rig — see §6) |
+
+#### Why split id from display name
+
+The 14-commit corpus addressed rigs by display name (`Mac Claude`, `5080 Claude`) — comfortable for humans, but case- and whitespace-sensitive in a way that makes DB indexes brittle and shell quoting awkward. The split fixes both: the canonical id is shell- and DB-clean, the display name preserves the human shape for body prose.
+
+#### Pre-v1.0.0 corpus compatibility
+
+v1.0.0 is forward-only. Pre-v1.0.0 corpus messages used display names in `from` / `to` and **will not validate** against this schema. The historical artifact remains in the scratch repo (`mcp-tool-shop-org/rig-bridge-scratch`) as the source corpus; it is not migrated to v1.0.0 frontmatter. This matches the precedent set by §7 item 8 (no `version` field in v1.0.0 envelopes; v1.1 introduces it before any v2 design lands).
 
 ### 3.5 Status verb-phrases
 
@@ -123,7 +139,7 @@ A status with no marker is a schema violation. If your message's lifecycle stanc
 
 `references[]` is an array of commit SHAs (full or short, ≥7 hex characters) identifying prior turns this message answers, corrects, or extends.
 
-References are **the bridge between the envelope and the SQLite control plane**: when a message lands in git, the SHA in `references[]` becomes a foreign key the control plane can join on. Authors should reference:
+References are **the bridge between the envelope and the SQLite control-plane**: when a message lands in git, the SHA in `references[]` becomes a foreign key the control-plane can join on. Authors should reference:
 
 - The immediate prior turn (the message they're answering)
 - Any earlier turn whose claims they're correcting or extending
@@ -135,17 +151,19 @@ Out-of-thread references (a SHA from a different bridge thread) are allowed; the
 
 ### 4.1 The ten types
 
+Listed in canonical lifecycle order — matches the `messageType` enum in `schemas/bridge-message.schema.json` and the §1.3 enumeration in `docs/control-plane-integration.md`:
+
 | Type | Role | Filename pattern |
 |---|---|---|
 | `REQUEST` | Asker spec — what the sender wants from the peer. Opens a thread. | `REQUEST.md` |
 | `HANDOFF` | Reply with payload, OR counter-proposal that re-shapes the request. | `HANDOFF.md` |
 | `RESPONSE` | Targeted reply that addresses prior turn's content. | `<RIG>-RESPONSE[-N].md` |
 | `ACK` | Acknowledgement — confirms receipt + alignment without new asks. | `<RIG>-ACK[-N][-QUAL].md` |
+| `RESOLUTION` | Terminal close-out for the thread. See §5. | `RESOLUTION.md` |
 | `STATE` | Inventory snapshot — context, not action. Often paired with REQUEST. | `STATE.md` |
 | `RESULT` | Output of a delegated action (clone batch, scan, build). | `<TOPIC>-RESULT.md` |
 | `RECOVERY` | Unexpected positive finding that changes the loss/gain footprint. | `RECOVERY-<TAG>.md` or `<TOPIC>-FOUND.md` |
 | `VERIFY` | Independent peer verification of a claim. | `<RIG>-VERIFY-<TAG>.md` |
-| `RESOLUTION` | Terminal close-out for the thread. See §5. | `RESOLUTION.md` |
 | `DECISIONS` | Human input relayed in-band (typically Mike's calls on open questions). | `MIKE-DECISIONS.md` or `DECISIONS.md` |
 
 ### 4.2 Type semantics
@@ -207,7 +225,7 @@ The body MAY end with an em-dashed author line (`— Mac Claude`, `— 5080 Clau
 
 The following are **deliberately not specified** so future readers don't try to extend the v1.0.0 envelope before friction shows up:
 
-1. **Multi-rig (3+) topology.** Symmetric two-rig is the v1 model. The schema's free-form `from`/`to` strings and `to`-as-array shape leave forward room, but routing logic for 3+ is out of scope.
+1. **Multi-rig (3+) topology.** Symmetric two-rig is the v1 model. The schema's open-membership rig-id slug pattern and `to`-as-array shape leave forward room (a third rig is just a third slug), but routing logic for 3+ is out of scope.
 2. **Conflict resolution beyond git's append-only semantics.** v1 leans entirely on git for ordering. Concurrent commits resolve via standard rebase / merge; the envelope doesn't carry vector clocks or causality metadata.
 3. **Auto-merge of `RunHandoff` messages from `multi-claude`.** For v1, `multi-claude`'s `RunHandoff` is the *envelope schema reference shape*, not an active integration. No adapter ships in v1.0.0.
 4. **`RunHandoff → rig-bridge envelope` adapter.** Future work. The Schema Cross-Reference table in §9 is the derivation target for that adapter when it lands.
@@ -218,12 +236,15 @@ The following are **deliberately not specified** so future readers don't try to 
 
 ## 8. Worked example (validates against the schema)
 
-```markdown
+The outer fence below uses four backticks so the nested triple-backtick code block inside the message body renders correctly on GitHub.
+
+````markdown
 ---
-from: 5080 Claude
+from: windows-5080
 to:
-  - Mac Claude
-  - Mike
+  - mac-m5max
+  - mike-relay
+display_name: 5080 Claude
 date: 2026-04-29
 status: ✅ Cutover complete. Old-repo archive unblocked.
 type: ACK
@@ -233,7 +254,7 @@ references:
 tldr: E:\bridge\ repointed to scratch remote (Option A). f79731b dropped as expected. 5080 ready for Phase 0.
 ---
 
-# 5080-ACK-2 — repoint executed (Option A)
+# 5080-ACK-2-REPOINTED — repoint executed (Option A)
 
 Mike picked A. Repoint done.
 
@@ -241,7 +262,7 @@ Mike picked A. Repoint done.
 
 ```bash
 cd /e/bridge
-git remote set-url origin https://github.com/mcp-tool-shop/rig-bridge-scratch.git
+git remote set-url origin https://github.com/mcp-tool-shop-org/rig-bridge-scratch.git
 git fetch origin
 git reset --hard origin/main   # f79731b dropped, expected
 ```
@@ -249,9 +270,9 @@ git reset --hard origin/main   # f79731b dropped, expected
 Standing by.
 
 — 5080 Claude
-```
+````
 
-This corresponds directly to `swarm-rig-bridge-001/5080-ACK-2-REPOINTED.md` in the source corpus, re-rendered into v1.0.0 frontmatter form.
+This corresponds directly to `swarm-rig-bridge-001/5080-ACK-2-REPOINTED.md` in the source corpus, re-rendered into v1.0.0 frontmatter form. The corpus message used the display name `5080 Claude` in `from:`; v1.0.0 requires the canonical id `windows-5080` and surfaces the display name in the optional `display_name` field. The body heading echoes the filename including the `-REPOINTED` qualifier (per §2.3) so the message's role in the sequence is visible to readers who jump straight to the body.
 
 ## 9. Schema Cross-Reference (refined from the ARCHITECTURE.md seed table)
 
@@ -284,5 +305,5 @@ For each `RunHandoff` field cluster, this table records the v1.0.0 envelope's de
 
 - Companion schema: `schemas/bridge-message.schema.json`
 - Architectural decision (D2a-with-control-plane-bridge-glue): `ARCHITECTURE.md` §"D2 — schema ownership"
-- Source corpus: `mcp-tool-shop/rig-bridge-scratch` — directories `star-freight-canon-001/`, `state-2026-04-29/`, `swarm-rig-bridge-001/`
+- Source corpus: `mcp-tool-shop-org/rig-bridge-scratch` — directories `star-freight-canon-001/`, `state-2026-04-29/`, `swarm-rig-bridge-001/`. The scratch repo holds the 14-commit pre-v1.0.0 corpus that this spec was derived from; the original archived repo (`mcp-tool-shop-org/rig-bridge`, archived) accumulated the broader 16-commit session that included scaffold turns not part of the envelope-design corpus — see `ARCHITECTURE.md` for the count reconciliation.
 - Reference shape (read-only): `multi-claude/src/types/handoff.ts:176-224` — `RunHandoff` interface

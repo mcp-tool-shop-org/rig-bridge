@@ -11,13 +11,15 @@
     "schemas",
     "README.md",
     "ARCHITECTURE.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
+  "x-todo-passWithNoTests": "remove --passWithNoTests from scripts.test once Phase 6 ships real test files",
   "keywords": [
     "mcp-tool-shop",
     "rig-bridge",

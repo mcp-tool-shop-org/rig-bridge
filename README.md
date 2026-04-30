@@ -1,16 +1,24 @@
 # rig-bridge
 
-> **Status:** pre-swarm scaffold (v0.0.1-pre-swarm). The full README ships in Phase 10 (Full Treatment) of the dogfood swarm. This placeholder exists so the repo is navigable while the swarm builds the tool.
+> **Status:** post-Phase-0 (envelope spec + schema + control-plane integration design landed). Phase 1 audit complete; Phase 3 amend in progress. The full README ships in Phase 10 (Full Treatment) of the dogfood swarm.
 
-Cross-rig sync tool for paired dev machines — git-native typed-envelope cross-agent handoffs.
+Cross-rig sync tool for paired dev rigs — git-native typed-envelope cross-agent handoffs.
 
 ## What it will be
 
-A CLI + engine library that lets two (or more) Claude instances on different machines coordinate via a shared git repo, using a typed-envelope protocol that survived first contact in a 16-commit organic session between a Mac and a Windows GPU rig on 2026-04-29.
+A CLI + engine library that lets two (or more) Claude instances on different rigs coordinate via a shared git repo, using a typed-envelope protocol that survived first contact in a 16-commit organic session between a Mac and a Windows GPU rig on 2026-04-29.
 
 The protocol owns its own envelope (transport-agnostic) and writes through `swarm-control-plane`'s SQLite as the truth layer. Git is the cross-rig wire.
 
 ## What's here today
+
+**Phase 0 deliverables (landed):**
+
+- `docs/envelope-spec.md` — canonical envelope spec rig-bridge owns (transport-agnostic frontmatter + body contract)
+- `schemas/bridge-message.schema.json` — JSON Schema 2020-12 for envelope frontmatter (validation source of truth)
+- `docs/control-plane-integration.md` — writes-through design against `swarm-control-plane`'s SQLite
+
+**Scaffold structure (Phase 6+ fills these in):**
 
 - `package.json` — npm package skeleton (`@mcptoolshop/rig-bridge`)
 - `src/cli.ts` — stub entrypoint (`--version`, `--help` only)

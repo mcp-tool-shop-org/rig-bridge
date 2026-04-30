@@ -1,6 +1,6 @@
 # Control-Plane Integration
 
-> **Status:** Phase 0 design — Envelope Design Wave (2026-04-29). Companion to `docs/envelope-spec.md` (Agent 1) and `schemas/bridge-message.schema.json`. Records the writes-through path between rig-bridge (cross-rig git transport) and `swarm-control-plane` (the SQLite truth layer in `@dogfood-lab/dogfood-swarm`).
+> **Status:** Phase 0 design — Envelope Design Wave (2026-04-29). Companion to `docs/envelope-spec.md` and `schemas/bridge-message.schema.json`. Records the writes-through path between rig-bridge (cross-rig git transport) and `swarm-control-plane` (the SQLite truth layer in `@dogfood-lab/dogfood-swarm`).
 
 ## 1. Architectural framing
 
@@ -10,7 +10,7 @@
 
 - **Git is the wire.** Append-only, signed-by-default (GitHub TLS), branch-per-thread, cheap to mirror across rigs. It is the *only* cross-machine substrate v1.0.0 trusts.
 - **Control-plane SQLite is the durable state.** Findings already deduplicate by fingerprint there; agent runs are already journaled there; wave receipts already export from there. There is no second truth to keep coherent.
-- **rig-bridge is the courier.** It moves envelope-shaped messages between rigs through git, and on each rig it writes a row to control-plane recording *that this envelope arrived* (or departed). The envelope itself stays a markdown file in the bridge clone — control-plane stores pointers + addressing metadata, not the body.
+- **rig-bridge is the courier.** It moves envelope-bearing messages between rigs through git, and on each rig it writes a row to control-plane recording *that this message arrived* (or departed). The whole message file (envelope frontmatter + freeform body) stays in the rig-bridge git clone — control-plane stores envelope fields + addressing metadata + a `body_hash` pointer, not the body itself. Per `docs/envelope-spec.md` §3, "the envelope" is the YAML frontmatter block; the message file is envelope + body.
 
 The seam is at `bridge send` and `bridge sync`. Above the seam is the operator's mental model (envelopes flowing between rigs). Below the seam is git push/pull plus a SQLite INSERT.
 
@@ -32,7 +32,7 @@ The single-machine `bridge` *ownership class* (the third value of `ownership_cla
 
 ### 1.3 What rig-bridge adds
 
-- **Cross-rig addressing.** `from_rig` / `to_rig` symbolic identifiers (`mac-m5max`, `windows-5080`) — control-plane has no such concept today.
+- **Cross-rig addressing.** `from_rig` / `to_rig` canonical kebab-case rig identifiers (`mac-m5max`, `windows-5080`); see `docs/envelope-spec.md` §3.4. Control-plane has no such concept today.
 - **Thread continuity across rigs.** A `thread` slug groups envelopes that belong to the same conversation, with `references[]` pointing at prior commit SHAs.
 - **Envelope typology.** Message-class enum (`REQUEST` / `HANDOFF` / `RESPONSE` / `ACK` / `RESOLUTION` / `STATE` / `RESULT` / `RECOVERY` / `VERIFY` / `DECISIONS`) — observed in the 14-commit corpus.
 - **Push-side and pull-side observability.** Both rigs see "what's been sent" and "what's arrived" as control-plane rows, queryable with the same `swarm` CLI conventions.
@@ -77,23 +77,26 @@ Two new tables, mirroring the existing patterns (entity + append-only event log,
 -- ───────────────────────────────────────────
 -- v5: rig-bridge cross-rig envelope index.
 -- One row per envelope sent or received on this rig. The body lives in
--- the bridge git clone at <bridge_root>/<thread>/<filename>; this row
--- captures addressing, type, status, and the commit SHA that landed it.
+-- the rig-bridge git clone at <bridge_root>/<thread>/<filename>; this row
+-- captures addressing, type, lifecycle/status (split per §4 cross-walk),
+-- and the commit SHA that landed it.
 -- ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS bridge_messages (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   thread          TEXT    NOT NULL,
   filename        TEXT    NOT NULL,        -- e.g. "HANDOFF.md", "5080-ACK-2.md"
-  message_type    TEXT    NOT NULL,        -- enum: REQUEST/HANDOFF/RESPONSE/ACK/...
-  from_rig        TEXT    NOT NULL,        -- e.g. "mac-m5max"
-  to_rig          TEXT    NOT NULL,        -- e.g. "windows-5080"
-  status          TEXT    NOT NULL,        -- enum: draft/sent/received/acked/resolved
+  message_type    TEXT    NOT NULL,        -- enum: REQUEST/HANDOFF/RESPONSE/ACK/RESOLUTION/STATE/RESULT/RECOVERY/VERIFY/DECISIONS
+  from_rig        TEXT    NOT NULL,        -- canonical kebab-case slug, e.g. "mac-m5max"
+  to_rig          TEXT    NOT NULL,        -- canonical kebab-case slug, e.g. "windows-5080"
+  lifecycle_state TEXT    NOT NULL,        -- transport state machine: drafted/sent/received/acked/resolved/superseded (CP-side truth, distinct from envelope status)
+  status_class    TEXT    NOT NULL,        -- closed enum derived from envelope status marker: active/pending/targeted/completed/cancelled
+  status_text     TEXT    NOT NULL,        -- full envelope verb-prose, byte-faithful (e.g. "✅ Cutover complete. Old-repo archive unblocked.")
   tldr            TEXT,                    -- one-line summary from envelope frontmatter
   envelope_date   TEXT    NOT NULL,        -- ISO 8601 from envelope `date:` field
   commit_sha      TEXT    NOT NULL,        -- commit that landed this envelope
   parent_refs     TEXT,                    -- JSON array of prior commit SHAs (envelope `references`)
   run_id          TEXT    REFERENCES runs(id),  -- nullable: swarm run if envelope is swarm-scoped
-  body_hash       TEXT,                    -- sha256, normalized — see §4.1 for the normative rule
+  body_hash       TEXT    NOT NULL,        -- sha256, normalized — see §4.1 for the normative rule (computed on every send; NOT NULL because the §4.1 rule applies unconditionally)
   created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
   UNIQUE(commit_sha, filename)
 );
@@ -111,9 +114,11 @@ CREATE TABLE IF NOT EXISTS bridge_message_events (
   created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_bridge_msg_thread ON bridge_messages(thread);
-CREATE INDEX IF NOT EXISTS idx_bridge_msg_run    ON bridge_messages(run_id);
-CREATE INDEX IF NOT EXISTS idx_bridge_msg_ev     ON bridge_message_events(message_id);
+CREATE INDEX IF NOT EXISTS idx_bridge_msg_thread       ON bridge_messages(thread);
+CREATE INDEX IF NOT EXISTS idx_bridge_msg_run          ON bridge_messages(run_id);
+CREATE INDEX IF NOT EXISTS idx_bridge_msg_status_class ON bridge_messages(status_class);
+CREATE INDEX IF NOT EXISTS idx_bridge_msg_lifecycle    ON bridge_messages(lifecycle_state);
+CREATE INDEX IF NOT EXISTS idx_bridge_msg_ev           ON bridge_message_events(message_id);
 ```
 
 This bumps `SCHEMA_VERSION` to `5`. Per `connection.js`, the existing `applyMigrations` mechanism handles the additive `CREATE TABLE IF NOT EXISTS` cleanly — the v5 migration is just the two CREATE TABLE statements appended to `SCHEMA_SQL`, no `ALTER TABLE` needed because both tables are new.
@@ -126,7 +131,7 @@ When the receiving rig (5080) runs `bridge sync` (or it's invoked by the pre-wav
 2. **Diff against last-seen.** Read `MAX(commit_sha)` per-thread from `bridge_messages WHERE to_rig = '<this rig>'`. Walk `git log <last-seen>..origin/main` for new commits.
 3. **Parse new envelopes.** For each new commit, identify added `<thread>/<file>.md` paths, parse frontmatter, validate against `bridge-message.schema.json`.
 4. **Fast-forward.** `git merge --ff-only origin/main`. (If this fails, abort sync — operator handles divergence; v1.0.0 does not auto-merge.)
-5. **Control-plane write.** For each parsed envelope, INSERT a `bridge_messages` row with `status='received'` and an event-log row `(event_type='received', rig='<this rig>')`.
+5. **Control-plane write.** For each parsed envelope, INSERT a `bridge_messages` row with `lifecycle_state='received'` (plus `status_class` + `status_text` derived from the envelope `status` per §4.2) and an event-log row `(event_type='received', rig='<this rig>')`.
 6. **Print arrivals.** Emit a one-line summary per new envelope (`thread`, type, from-rig, tldr) to stdout, plus exit 0.
 
 ### 2.4 Library surface (proposed exports from `@dogfood-lab/dogfood-swarm`)
@@ -136,9 +141,9 @@ To keep rig-bridge from reaching into the package's internals (testing-os CLAUDE
 ```js
 // @dogfood-lab/dogfood-swarm/bridge
 export function recordSent(db, envelope, commitSha) { /* INSERT bridge_messages + event */ }
-export function recordReceived(db, envelope, commitSha) { /* idem, status=received */ }
+export function recordReceived(db, envelope, commitSha) { /* idem, lifecycle_state=received */ }
 export function recordAcked(db, messageId, ackingCommitSha) { /* event-only */ }
-export function listMessages(db, { thread, run_id, status } = {}) { /* SELECT */ }
+export function listMessages(db, { thread, run_id, lifecycle_state, status_class } = {}) { /* SELECT */ }
 export function lastSeenCommit(db, { thread, to_rig }) { /* MAX(commit_sha) */ }
 ```
 
@@ -189,23 +194,24 @@ Failure exits non-zero with a one-line cause + a one-line remedy. No prompts, no
 
 ## 4. Schema cross-walk — envelope frontmatter to control-plane columns
 
-Envelope fields per `docs/envelope-spec.md` (Agent 1, parallel deliverable; field set inferred from ARCHITECTURE.md Schema Cross-Reference + 14-commit corpus):
+Envelope fields per `docs/envelope-spec.md` (the canonical envelope definition; derived from the 14-commit corpus and the Schema Cross-Reference seed in `ARCHITECTURE.md`):
 
 | Envelope field   | Control-plane location | Notes |
 |------------------|------------------------|-------|
-| `from`           | `bridge_messages.from_rig` | symbolic rig identifier, free text v1.0.0 |
-| `to`             | `bridge_messages.to_rig` | same |
+| `from`           | `bridge_messages.from_rig` | canonical kebab-case rig identifier (e.g. `mac-m5max`); see `docs/envelope-spec.md` §3.4 |
+| `to`             | `bridge_messages.to_rig` | same shape; multi-recipient envelopes (`to: [...]`) land as one row per recipient at the courier seam |
 | `date`           | `bridge_messages.envelope_date` | ISO 8601; distinct from `created_at` (which is the row insert time) |
-| `status`         | `bridge_messages.status` | enum constrained to: drafted/sent/received/acked/resolved/superseded |
+| `status` (envelope, open verb-prose) | **two columns**: `bridge_messages.status_class` + `bridge_messages.status_text` | The envelope's `status` is open verb-prose authored by humans (e.g. `✅ Cutover complete. Old-repo archive unblocked.`). The CP needs queryability without losing fidelity, so it splits the field: `status_class` is a closed enum derived from the leading marker emoji (`▶` → `active`, `⏸` → `pending`, `🎯` → `targeted`, `✅` → `completed`, `❌` → `cancelled`); `status_text` preserves the full verb-prose byte-faithfully. The envelope itself is **unchanged** for authors — the schema's `^(▶\|⏸\|🎯\|✅\|❌)\s.+$` pattern still applies. See §4.2 for the derivation rule. |
+| `display_name`   | (not stored as its own column for v1.0.0) | optional human-readable rig name; embed in body if visibility matters. Out of scope for control-plane in v1.0.0; deferred to v1.1 if a join becomes useful |
 | `tldr`           | `bridge_messages.tldr` | string, soft cap 280 chars (validator only — column is plain TEXT) |
 | `type`           | `bridge_messages.message_type` | enum from §1.3 |
 | `thread`         | `bridge_messages.thread` | indexed; identifies the conversation |
 | `references`     | `bridge_messages.parent_refs` | JSON array of commit SHAs, mirrors the `findings.cross_ref` JSON-in-TEXT precedent |
-| (envelope body)  | **not stored in CP** | body lives in the bridge git clone; CP stores `body_hash` for drift detection only |
+| (envelope body)  | **not stored in CP** | body lives in the rig-bridge git clone; CP stores `body_hash` for drift detection only |
 | (commit SHA)     | `bridge_messages.commit_sha` | not in envelope frontmatter — added by transport layer at send-time |
 | (filename)       | `bridge_messages.filename` | derived from envelope type + ordinal in thread |
 | (run linkage)    | `bridge_messages.run_id` | nullable — populated when an envelope is created inside an active swarm run; FK back to `runs(id)` |
-| (lifecycle)      | `bridge_message_events` | one row per state transition, append-only |
+| (transport lifecycle) | `bridge_messages.lifecycle_state` + `bridge_message_events` | `lifecycle_state` is the CP-side state-machine column (closed enum: `drafted`/`sent`/`received`/`acked`/`resolved`/`superseded`). `bridge_message_events` is the append-only log of state transitions. **Do not confuse this with the envelope's `status` field** — `status` is what the human author wrote, `lifecycle_state` is what the transport observed. |
 
 Every field in the envelope spec has a home. Body is deliberately out — control-plane is an index, not an archive. Git is the archive.
 
@@ -221,9 +227,11 @@ The `bridge_messages.body_hash` column is computed and stored on every `bridge s
 
 1. **Line endings.** Normalize all `\r\n` and lone `\r` to `\n`. Mac and 5080 produce CRLF/LF drift on round-trip through git's `core.autocrlf` and editor defaults; without this rule, byte-identical authored content hashes differently per rig and `body_hash` becomes a false-positive drift signal.
 2. **Trailing whitespace on lines.** Stripped per line. Editors silently inject this; it's not part of the message's intent.
-3. **Trailing whitespace on the file.** A single terminal `\n` is preserved; any further trailing whitespace is stripped.
+3. **Trailing newlines on the file.** All trailing newlines are stripped, then **exactly one** terminal `\n` is appended. This means an empty body and a body with one or more trailing blank lines all hash identically — the rule is "exactly one terminal newline, always," not "preserve whatever was there." This deliberately erases per-rig editor drift in trailing blank lines (Mac and 5080 editors disagree on this routinely; the disagreement is not part of the message's intent).
 4. **Encoding.** UTF-8, no BOM. If a BOM is present at body start, strip before hashing.
 5. **No other normalization.** Markdown content (heading levels, list bullet style, fenced-code language tags, internal whitespace inside lines) is preserved as authored — those ARE part of the message's intent and drift in them IS real drift to detect.
+
+> **Note.** Rule 3 means the empty body (`""`) and a body that is just `"\n"` hash identically. This is intentional — both represent "no body content authored," and per-rig editors disagree on which they emit. Authors who need to assert "this message has no body" carry that intent in the envelope (typically via `tldr` or by message type alone), not in the body's whitespace.
 
 **Reference implementation (informative):**
 ```ts
@@ -243,7 +251,25 @@ export function bodyHash(raw: string): string {
 
 **Test vectors** (computed against the reference impl) MUST ship as part of `@dogfood-lab/dogfood-swarm` test fixtures so a Rust or Python re-implementation can verify byte-for-byte parity. The Phase 1 test agent owns adding these.
 
-**Why pin this now (Mike, 2026-04-29):** "Cheap to spec now, painful to retrofit. Mac and 5080 can produce CRLF/LF drift on the same body otherwise, and the hash becomes a false-positive drift signal." Directly addresses the corpus's "What hurt #2" — stale-truth between bridge messages and per-rig MEMORY.md.
+**Why pin this now (Mike, 2026-04-29):** "Cheap to spec now, painful to retrofit. Mac and 5080 can produce CRLF/LF drift on the same body otherwise, and the hash becomes a false-positive drift signal." Directly addresses the corpus's "What hurt #2" — stale-truth between rig-bridge messages and per-rig MEMORY.md.
+
+### 4.2 `status` derivation rule (envelope marker → `status_class`)
+
+The CP `status_class` column is computed from the envelope's `status` field at write time. The derivation is purely the leading marker glyph; the trailing prose lands in `status_text` unchanged.
+
+| Envelope marker | `status_class` value |
+|---|---|
+| `▶` | `active` |
+| `⏸` | `pending` |
+| `🎯` | `targeted` |
+| `✅` | `completed` |
+| `❌` | `cancelled` |
+
+The schema's `status` pattern (`^(▶|⏸|🎯|✅|❌)\s.+$`) guarantees exactly one of these markers is present, so the derivation is total. Validators that fail the pattern fail the schema first; the CP write never sees them.
+
+This split is the resolution to the apparent conflict between the envelope-spec (open verb-prose) and the §1.3 enumeration (closed lifecycle): both are correct, on different layers. The envelope serves humans — closed enums lose the nuance the corpus showed authors compressing into the prose (e.g. `✅ Cutover complete. Old-repo archive unblocked.` carries both the local result and the remote consequence). The CP serves queries — `WHERE status_class = 'cancelled'` needs to be cheap. `status_class` indexes; `status_text` preserves.
+
+The transport's own state-machine column (`lifecycle_state`) is independent of both. It records what the courier observed (`drafted` → `sent` → `received` → `acked` → `resolved` / `superseded`), not what the human wrote. A message can be `lifecycle_state='resolved'` while `status_class='cancelled'` (the thread closed via a cancellation envelope) — the two rows tell different stories and both are queryable.
 
 ## 5. Failure modes + recovery
 
@@ -255,7 +281,7 @@ export function bodyHash(raw: string): string {
 
 **Recovery:**
 - **Push-then-SQLite-fail:** the envelope is on git but not in CP. The next `bridge sync` (or an explicit `bridge reconcile`) replays steps 5 of §2.3 against the orphan commit. Idempotent because of `UNIQUE(commit_sha, filename)`.
-- **SQLite-then-push-fail:** the row is in CP with `status='sent'` but the commit isn't on the remote. Detect by checking `git branch --contains <commit_sha>` for the local branch only. Recovery: re-attempt `git push`. If the local commit was lost (unlikely — git is append-only locally too), the CP row is marked `status='superseded'` with a note in the event log.
+- **SQLite-then-push-fail:** the row is in CP with `lifecycle_state='sent'` but the commit isn't on the remote. Detect by checking `git branch --contains <commit_sha>` for the local branch only. Recovery: re-attempt `git push`. If the local commit was lost (unlikely — git is append-only locally too), the CP row is marked `lifecycle_state='superseded'` with a note in the event log.
 
 The explicit operator command is `bridge reconcile [--thread X]`. v1.0.0 ships it; it's not optional.
 
@@ -273,7 +299,7 @@ The explicit operator command is `bridge reconcile [--thread X]`. v1.0.0 ships i
 
 **Replay path:**
 1. `bridge replay --thread <X>` (or `--all`) walks `git log` on the bridge clone.
-2. For each commit, parse any added envelope files, validate their frontmatter, INSERT a `bridge_messages` row with `status='received'` (or `status='sent'` if `from_rig` matches the local rig identifier).
+2. For each commit, parse any added envelope files, validate their frontmatter, INSERT a `bridge_messages` row with `lifecycle_state='received'` (or `lifecycle_state='sent'` if `from_rig` matches the local rig identifier), plus `status_class` + `status_text` derived from the envelope `status` per §4.2.
 3. INSERT a single `bridge_message_events` row per envelope: `event_type='replayed'`, `notes='reconstructed from git history at <date>'`.
 4. Lifecycle history (`acked`, `resolved`) is **lost** — those state transitions only ever lived in CP. Replay recovers existence + addressing, not ack-state. v1.0.0 acceptable; documented loud in `bridge replay --help`.
 
@@ -285,7 +311,7 @@ Explicitly out of scope for v1.0.0 (echoes ARCHITECTURE.md §"Out of scope" and 
 
 - **Pre-wave hook auto-installation.** v1.0.0 requires the operator to pass `--bridge-precheck` to `swarm dispatch`. v1.1 may default it on when `bridge` is on `$PATH`.
 - **MCP frontend.** rig-bridge's CLI is the only operator surface in v1.0.0. An MCP server wrapping `bridge send` / `bridge sync` is plausible but unbuilt.
-- **Multi-rig (3+).** Schema is forward-compatible — `from_rig` / `to_rig` are arbitrary strings — but no routing logic, no fan-out, no broadcast envelopes. Two-rig symmetric only.
+- **Multi-rig (3+).** Schema is forward-compatible — `from_rig` / `to_rig` are open-membership kebab-case slugs — but no routing logic, no fan-out, no broadcast envelopes. Two-rig symmetric only.
 - **Encryption beyond GitHub default.** Envelope bodies in plaintext at rest in the bridge clone and in transit through GitHub TLS. No PGP, no age, no per-thread keys.
 - **Cloud-hosted central queue.** Git remains the wire. No Redis, no SQS, no Postgres LISTEN/NOTIFY backend.
 - **Plugin system.** Envelope types are a closed enum in v1.0.0. New types require a schema bump.
@@ -295,7 +321,7 @@ Explicitly out of scope for v1.0.0 (echoes ARCHITECTURE.md §"Out of scope" and 
 ## References
 
 - `ARCHITECTURE.md` — D2 stance + envelope cross-reference seed
-- `docs/envelope-spec.md` — Agent 1 sibling deliverable (envelope shape this doc mirrors)
+- `docs/envelope-spec.md` — canonical envelope spec; this doc mirrors the field set and adds the CP write-through layer
 - `schemas/bridge-message.schema.json` — Ajv-validated schema for the envelope frontmatter
 - `/Volumes/T9-Shared/AI/dogfood-lab/testing-os/packages/dogfood-swarm/db/schema.js` — control-plane schema source of truth
 - `/Volumes/T9-Shared/AI/dogfood-lab/testing-os/packages/dogfood-swarm/lib/domains.js` — bridge-domain (single-machine) ownership class, semantically distinct from rig-bridge transport
