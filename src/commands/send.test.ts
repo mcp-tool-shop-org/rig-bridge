@@ -42,6 +42,33 @@ describe("runSend", () => {
     expect(text).toContain("from: mac-m5max");
     expect(text).toContain("to: windows-5080");
     expect(text).toContain("type: HANDOFF");
+    // G-001: body_hash MUST be in the envelope frontmatter (not just SendResult).
+    // Receiving rigs re-hash and compare against this field to detect drift.
+    expect(text).toContain(`body_hash: ${r.bodyHash}`);
+  });
+
+  // G-001 (dogfood-friction.md): cross-rig drift detection requires body_hash
+  // be persisted in the envelope. Round-trip test: parse the written file,
+  // re-hash the body per §4.1 normalization, confirm it matches the stored
+  // body_hash. This is the test the dogfood pipe was supposed to enable.
+  it("body_hash in frontmatter round-trips against re-computation", async () => {
+    const { parseEnvelope } = await import("../engine/envelope.js");
+    const { bodyHash } = await import("../engine/body-hash.js");
+    const r = runSend({
+      cwd: dir,
+      type: "STATE",
+      threadId: "thread-1",
+      to: ["windows-5080"],
+      status: "✅ State snapshot",
+      bodyText: "# State\n\nMixed line endings: line A\r\nline B\r\nline C  \n",
+      noPush: true,
+      stdout: () => {},
+      stderr: () => {},
+    });
+    const text = readFileSync(r.filePath, "utf8");
+    const parsed = parseEnvelope(text);
+    expect(parsed.frontmatter.body_hash).toBe(r.bodyHash);
+    expect(bodyHash(parsed.body)).toBe(parsed.frontmatter.body_hash);
   });
 
   it("bumps the ordinal when the bare filename already exists", () => {

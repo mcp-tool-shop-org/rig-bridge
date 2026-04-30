@@ -88,6 +88,7 @@ Every message MUST begin with a YAML frontmatter block delimited by `---` lines,
 | `tldr` | string | One-sentence summary. Strongly recommended for messages whose body exceeds ~30 lines. |
 | `references` | string[] | Commit SHAs of prior turns this message answers, corrects, or builds on. See §3.6. |
 | `display_name` | string | Optional human-readable rig name (≤80 chars). Used by prose body. The envelope's `from` is authoritative for routing. See §3.4. |
+| `body_hash` | string | SHA-256 hex digest of the §4.1-normalized body (see `docs/control-plane-integration.md` §4.1 for the normalization rule). **Auto-populated by `bridge send`; manual envelope authoring should leave blank.** Receiving rigs re-hash on pull and compare against this field to detect drift. Q6 v1.0.0 deliverable; G-001 closed the implementation gap. |
 
 ### 3.3 Disallowed fields
 

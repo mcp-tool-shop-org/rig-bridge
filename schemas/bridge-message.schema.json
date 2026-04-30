@@ -61,6 +61,11 @@
         "description": "A git commit SHA (short ≥7 hex chars or full 40 hex chars) identifying a prior turn this message answers, corrects, or extends. Becomes the foreign key the SQLite control-plane joins on."
       },
       "description": "Commit SHAs of prior turns. Authors should reference the immediate prior turn, any earlier turn whose claims they're correcting, and the thread's opening REQUEST when relevant."
+    },
+    "body_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 hex digest of the normalized message body (per docs/control-plane-integration.md §4.1: BOM strip → CRLF/CR→LF → trim trailing whitespace per line → exactly one terminal newline). Auto-populated by `bridge send`; manual envelope authoring should leave this blank — the CLI computes and writes it on send. Receiving rigs re-hash on pull and compare against this value to detect drift. Q6 (Mike's Phase 0 review acceptance) shipped this in v1.0.0; G-001 (dogfood-friction.md) closed the implementation gap."
     }
   },
   "$defs": {

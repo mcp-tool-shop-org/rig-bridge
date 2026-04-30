@@ -181,16 +181,18 @@ export function runSend(args: SendArgs): SendResult {
     frontmatter.references = args.references;
   }
 
+  // body_hash is part of the envelope (Q6 / G-001 close): SHA-256 of the
+  // §4.1-normalized body. Compute BEFORE validation so the schema sees the
+  // populated field. Receiving rigs re-hash on pull and compare to detect
+  // drift — without this field, drift detection has nothing to compare
+  // against.
+  const hash = bodyHash(body);
+  frontmatter.body_hash = hash;
+
   const validation = validateFrontmatter(frontmatter);
   if (!validation.valid) {
     throw new Error(`envelope frontmatter failed schema validation: ${validation.errorText}`);
   }
-
-  // Compute body_hash even though v1.0.0 doesn't write it to a CP column —
-  // exercising the function ensures v1.1's drop-in lands clean. Throwing
-  // it away here is correct; the value is captured in the SendResult so
-  // tests can assert on it.
-  const hash = bodyHash(body);
 
   const text = renderEnvelope({ frontmatter, body });
   writeFileSync(filePath, text, "utf8");
