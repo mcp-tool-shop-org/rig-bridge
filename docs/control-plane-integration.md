@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS bridge_messages (
   commit_sha      TEXT    NOT NULL,        -- commit that landed this envelope
   parent_refs     TEXT,                    -- JSON array of prior commit SHAs (envelope `references`)
   run_id          TEXT    REFERENCES runs(id),  -- nullable: swarm run if envelope is swarm-scoped
-  body_hash       TEXT,                    -- sha256 of envelope body bytes (drift detection)
+  body_hash       TEXT,                    -- sha256, normalized — see §4.1 for the normative rule
   created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
   UNIQUE(commit_sha, filename)
 );
@@ -209,6 +209,42 @@ Envelope fields per `docs/envelope-spec.md` (Agent 1, parallel deliverable; fiel
 
 Every field in the envelope spec has a home. Body is deliberately out — control-plane is an index, not an archive. Git is the archive.
 
+### 4.1 `body_hash` — normative spec (algorithm + normalization)
+
+The `bridge_messages.body_hash` column is computed and stored on every `bridge send`. It enables drift detection on `bridge replay` (§5.3) without storing the body itself.
+
+**Algorithm:** `SHA-256` (lowercase hex, 64 chars). Not negotiable in v1.0.0 — pinning early avoids a future migration path. If a v2 adds a stronger algorithm, it ships behind a separate column (`body_hash_v2`) so existing rows stay valid.
+
+**Input scope:** the envelope BODY only — everything after the second `---` frontmatter delimiter, up to but not including any trailing single newline. The frontmatter itself is NOT hashed (those fields live in their own columns and are individually queryable).
+
+**Normalization rule (mandatory, applied before hashing):**
+
+1. **Line endings.** Normalize all `\r\n` and lone `\r` to `\n`. Mac and 5080 produce CRLF/LF drift on round-trip through git's `core.autocrlf` and editor defaults; without this rule, byte-identical authored content hashes differently per rig and `body_hash` becomes a false-positive drift signal.
+2. **Trailing whitespace on lines.** Stripped per line. Editors silently inject this; it's not part of the message's intent.
+3. **Trailing whitespace on the file.** A single terminal `\n` is preserved; any further trailing whitespace is stripped.
+4. **Encoding.** UTF-8, no BOM. If a BOM is present at body start, strip before hashing.
+5. **No other normalization.** Markdown content (heading levels, list bullet style, fenced-code language tags, internal whitespace inside lines) is preserved as authored — those ARE part of the message's intent and drift in them IS real drift to detect.
+
+**Reference implementation (informative):**
+```ts
+function normalizeBody(raw: string): string {
+  const noBom = raw.startsWith("﻿") ? raw.slice(1) : raw;
+  const lf = noBom.replace(/\r\n?/g, "\n");
+  const lines = lf.split("\n").map(line => line.replace(/[ \t]+$/, ""));
+  const joined = lines.join("\n");
+  return joined.replace(/\n+$/, "") + "\n";
+}
+
+import { createHash } from "node:crypto";
+export function bodyHash(raw: string): string {
+  return createHash("sha256").update(normalizeBody(raw), "utf8").digest("hex");
+}
+```
+
+**Test vectors** (computed against the reference impl) MUST ship as part of `@dogfood-lab/dogfood-swarm` test fixtures so a Rust or Python re-implementation can verify byte-for-byte parity. The Phase 1 test agent owns adding these.
+
+**Why pin this now (Mike, 2026-04-29):** "Cheap to spec now, painful to retrofit. Mac and 5080 can produce CRLF/LF drift on the same body otherwise, and the hash becomes a false-positive drift signal." Directly addresses the corpus's "What hurt #2" — stale-truth between bridge messages and per-rig MEMORY.md.
+
 ## 5. Failure modes + recovery
 
 ### 5.1 Push succeeds, SQLite write fails (or vice versa)
@@ -241,7 +277,7 @@ The explicit operator command is `bridge reconcile [--thread X]`. v1.0.0 ships i
 3. INSERT a single `bridge_message_events` row per envelope: `event_type='replayed'`, `notes='reconstructed from git history at <date>'`.
 4. Lifecycle history (`acked`, `resolved`) is **lost** — those state transitions only ever lived in CP. Replay recovers existence + addressing, not ack-state. v1.0.0 acceptable; documented loud in `bridge replay --help`.
 
-**The body-hash column** (`bridge_messages.body_hash`) makes drift detection cheap on replay: re-hashing matches the original-write hash, confirming git history is byte-identical to what was originally indexed.
+**The body-hash column** (`bridge_messages.body_hash`) makes drift detection cheap on replay: re-hashing the normalized body (per §4.1) matches the original-write hash, confirming git history is byte-identical to what was originally indexed.
 
 ## 6. Deferred to v1.1+
 

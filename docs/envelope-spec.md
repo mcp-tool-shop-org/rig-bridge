@@ -214,6 +214,7 @@ The following are **deliberately not specified** so future readers don't try to 
 5. **Body schema validation.** Body is freeform markdown for v1.0.0. A v2 may introduce per-`type` body schemas (e.g. `HANDOFF.body.payload[]`); v1 does not.
 6. **Cloud-hosted central queue.** Git remains the transport. The envelope is transport-agnostic so a future implementation could swap, but the v1 implementation is git.
 7. **Encryption / signing beyond what GitHub provides.** The repo's GitHub permissions are the auth model for v1.
+8. **Envelope versioning.** v1.0.0 deliberately omits a `version` field in the envelope frontmatter. Trade-off: a future v2 with breaking envelope-shape changes cannot be branched-on by readers — the schema bump is technically breaking. Acceptable in v1 because consumers are controlled (Mac + 5080 in the founding deployment), but **v1.1 should introduce `version: "1.1"` (default-optional, default-stamped on send) before any v2 design lands.** Logged as a known-future-decision (Mike, 2026-04-29 Phase 0 review acceptance) so the next reviewer doesn't rediscover this trade-off.
 
 ## 8. Worked example (validates against the schema)
 
