@@ -6,7 +6,7 @@
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import Ajv2020 from "ajv/dist/2020.js";
 import type { ErrorObject, ValidateFunction } from "ajv";
 import addFormats from "ajv-formats";
@@ -22,6 +22,32 @@ const SCHEMA_PATH = resolve(
   "schemas",
   "bridge-message.schema.json",
 );
+
+// One-line debug trace at module load (B-ENG-018). Gated on
+// DEBUG_RIG_BRIDGE so the normal CLI stays quiet; when an operator is
+// hunting a "which schema am I running?" question, they can flip the
+// env var and immediately see the resolved schema path. Wrapped in a
+// try/catch so a broken stderr never blocks module init.
+if (process.env.DEBUG_RIG_BRIDGE) {
+  try {
+    let displayPath = SCHEMA_PATH;
+    try {
+      const rel = relative(process.cwd(), SCHEMA_PATH);
+      // Prefer the cwd-relative form when it's actually shorter and not
+      // a "../../.." escape — that's the most operator-friendly read.
+      if (rel && !rel.startsWith("..") && rel.length < SCHEMA_PATH.length) {
+        displayPath = rel;
+      }
+    } catch {
+      // fall through with the absolute path
+    }
+    process.stderr.write(
+      `rig-bridge: schema-validator loaded from ${displayPath}\n`,
+    );
+  } catch {
+    // ignore — debug trace must never break the engine
+  }
+}
 
 let cachedValidator: ValidateFunction | undefined;
 let cachedAjv: Ajv2020 | undefined;

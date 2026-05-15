@@ -33,9 +33,16 @@ export function readConfig(repoRoot: string): BridgeConfig {
     );
   }
   const raw = readFileSync(p, "utf8");
+  // Mirror envelope §4.1 line-ending normalization (CRLF/CR -> LF) for
+  // cross-platform safety: a bridge repo cloned on Windows with
+  // core.autocrlf=true rewrites .bridge/config.yaml to CRLF on checkout,
+  // and the yaml parser then fails with a cryptic mapping/scalar error.
+  // Normalize first so the parser sees the same canonical form on every
+  // host. See B-ENG-005.
+  const normalized = raw.replace(/\r\n?/g, "\n");
   let parsed: unknown;
   try {
-    parsed = yamlParse(raw);
+    parsed = yamlParse(normalized);
   } catch (e) {
     throw new ConfigError(
       `${p} is not valid YAML: ${(e as Error).message}`,

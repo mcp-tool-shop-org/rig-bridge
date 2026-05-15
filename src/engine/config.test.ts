@@ -6,9 +6,20 @@ import { readConfig, writeConfig, ConfigError, configPath } from "./config.js";
 
 let root: string;
 
+// B-TST-001 (Stage C wave 1): surface teardown failures and tolerate
+// transient Windows file-locks via maxRetries.
+function cleanupTempDir(p: string): void {
+  try {
+    rmSync(p, { recursive: true, force: true, maxRetries: 3 });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error("temp cleanup failed for", p, e);
+  }
+}
+
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "rig-bridge-config-"));
-  return () => rmSync(root, { recursive: true, force: true });
+  return () => cleanupTempDir(root);
 });
 
 describe("writeConfig + readConfig", () => {

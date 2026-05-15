@@ -18,21 +18,36 @@
 //   * `tldr` over 280 chars warns on stderr and proceeds (decision #1).
 //   * `--to` accepts comma-separated values in a single flag *and* repeated
 //     --to flags (decision #2 — both forms accepted).
+//
+// OUTPUT DISCIPLINE (B-CMD-002 / B-CMD-003, Stage C wave 1):
+//   * stdout is the stable, parseable contract — one line of key=value
+//     pairs (type=, thread=, file=, commit=). `file=` is repo-relative.
+//     Phase 7's `status` scanner does `awk '/^rig-bridge: sent /'` and
+//     parses key=value reliably without re-reading envelope files.
+//   * stderr is the human-readable narrative — natural prose for operators
+//     scrolling the terminal, including full paths and recovery hints.
 
 import {
   existsSync,
   readFileSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { repoRoot, safeCommit, safePush, type SafeCommitResult } from "../engine/git.js";
 import { readConfig } from "../engine/config.js";
 import { renderEnvelope } from "../engine/envelope.js";
 import { validateFrontmatter } from "../engine/schema-validator.js";
 import { bodyHash } from "../engine/body-hash.js";
 import { markerToStatusClass, type StatusClass } from "../engine/status.js";
-import { validateRigId } from "../engine/rig-id.js";
+import { validateRigId, normalizeRigId } from "../engine/rig-id.js";
+
+// B-ENG-003 cross-cutting fix: case-normalize rig-ids at the --to ingress
+// so `--to Windows-5080` becomes `windows-5080` before validation. The
+// Engine helper `normalizeRigId` is imported above; it is a pure (trim +
+// lowercase) transform. The composition with validateRigId is the
+// canonical auto-fix shape mandated by the brief.
 
 export const SUPPORTED_TYPES = [
   "REQUEST",
@@ -117,7 +132,9 @@ export function runSend(args: SendArgs): SendResult {
   }
 
   // Validate --to rig ids at ingress (Mike's guidance #2).
-  const toFlat = flatten(args.to ?? []);
+  // B-ENG-003: normalize first (trim + lowercase) so `--to Windows-5080`
+  // is accepted and propagates as `windows-5080` into the envelope.
+  const toFlat = flatten(args.to ?? []).map(normalizeRigId);
   if (toFlat.length === 0) {
     throw new Error("`--to <rig-id>` is required (one or more)");
   }
@@ -201,21 +218,64 @@ export function runSend(args: SendArgs): SendResult {
     ? `${type}: ${args.tldr}`
     : `${type}: ${args.threadId}/${filename}`;
 
-  // If commit fails, leave the file in place so the operator can fix and
-  // retry (e.g. resolve git config issues) — safeCommit's throw bubbles up.
-  const commitResult: SafeCommitResult = safeCommit({
-    files: [filePath],
-    message: commitMsg,
-    cwd: root,
-    stderr,
-  });
-
-  if (!args.noPush) {
-    safePush({ cwd: root });
+  // F-CMD-008: if commit fails (missing git identity, hook failure, etc.)
+  // the freshly-written envelope file is orphaned on disk; a naive retry
+  // then dies with "file already exists" until the operator manually deletes
+  // it. Clean up the orphan before re-throwing so retry is straightforward.
+  // We deliberately surface BOTH the cleanup note and the original error.
+  let commitResult: SafeCommitResult;
+  try {
+    commitResult = safeCommit({
+      files: [filePath],
+      message: commitMsg,
+      cwd: root,
+      stderr,
+    });
+  } catch (e) {
+    try {
+      unlinkSync(filePath);
+    } catch {
+      // If cleanup itself fails (permissions, already-removed), proceed
+      // with the original throw — surfacing the commit failure matters
+      // more than the cleanup error.
+    }
+    const orig = (e as Error).message ?? String(e);
+    throw new Error(
+      `rig-bridge: commit failed and the unpushed envelope at ${filePath} was removed so you can retry cleanly. Original error: ${orig}`,
+    );
   }
 
+  if (!args.noPush) {
+    // F-CMD-010: if push fails (non-fast-forward, network), the commit
+    // landed locally but is unpushed. Print a clear operator-recovery
+    // message to stderr before re-throwing the original error so callers
+    // and tests still see the actual failure.
+    try {
+      safePush({ cwd: root });
+    } catch (e) {
+      stderr(
+        `rig-bridge: commit landed locally but push failed.\n` +
+          `To recover:  cd ${root}; git pull --rebase; git push\n` +
+          `Or retry the original send with --no-push to skip the push step.\n`,
+      );
+      throw e;
+    }
+  }
+
+  // B-CMD-003 split:
+  //   stdout: parseable contract line — type=<TYPE> thread=<id>
+  //           file=<thread>/<filename> commit=<sha7>. Phase 7's scanner
+  //           does `awk '/^rig-bridge: sent /'` and parses key=value
+  //           pairs reliably (no envelope-file re-parsing required to
+  //           know what kind of message was sent).
+  //   stderr: natural prose for operators reading the terminal.
+  const sha7 = commitResult.commitSha.slice(0, 7);
+  const relFile = relative(root, filePath).replace(/\\/g, "/");
   stdout(
-    `rig-bridge: sent ${type} ${args.threadId}/${filename} (${commitResult.commitSha.slice(0, 7)})\n`,
+    `rig-bridge: sent type=${type} thread=${args.threadId} file=${relFile} commit=${sha7}\n`,
+  );
+  stderr(
+    `rig-bridge: sent ${type} in thread ${args.threadId} as ${filename}; committed as ${sha7}\n`,
   );
 
   return {

@@ -1,6 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/mcp-tool-shop-org/rig-bridge/blob/main/schemas/bridge-message.schema.json",
+  "$id": "https://github.com/mcp-tool-shop-org/rig-bridge/blob/v1.0.0/schemas/bridge-message.schema.json",
+  "$schema_version": "1.0.0",
+  "$comment": "Schema $id is pinned to the tagged release version. v1.1 schema bumps will produce $id ending in '/v1.1.0/...' so consumers can distinguish. The sibling $schema_version field carries the same evolution version as a non-URL payload so tools can read it without parsing the $id URL. Pre-v1.0.0 release notes: the previous $id pointed to '/blob/main/...'.",
   "title": "rig-bridge bridge-message envelope",
   "description": "JSON Schema for the YAML frontmatter of a rig-bridge message file. Validates the envelope only; the markdown body is freeform for v1.0.0. See docs/envelope-spec.md for the human-readable specification this schema accompanies.",
   "type": "object",
@@ -66,6 +68,28 @@
       "type": "string",
       "pattern": "^[0-9a-f]{64}$",
       "description": "SHA-256 hex digest of the normalized message body (per docs/control-plane-integration.md §4.1: BOM strip → CRLF/CR→LF → trim trailing whitespace per line → exactly one terminal newline). Auto-populated by `bridge send`; manual envelope authoring should leave this blank — the CLI computes and writes it on send. Receiving rigs re-hash on pull and compare against this value to detect drift. Q6 (Mike's Phase 0 review acceptance) shipped this in v1.0.0; G-001 (dogfood-friction.md) closed the implementation gap."
+    },
+    "in_reply_to": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Body-hash of the prior turn this envelope replies to. Required on relay envelopes (Phase 7 L8 — replay prevention) and optional on other envelope types. Receiving rigs MAY verify by locating the matching prior envelope and comparing its body_hash against this value. See docs/envelope-spec.md §relay-attestation."
+    },
+    "attested_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Signing key identifier (gpg-key-id, ssh-key-fingerprint, or sigstore OIDC subject) of the human operator who attested this envelope. Required on relay envelopes (Phase 7 L7 — relay attestation block) where the envelope MUST be commit-signed by the operator's git config. The control-plane derives provenance from this field plus the git commit signature."
+    },
+    "attested_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:?\\d{2})?$",
+      "description": "ISO 8601 timestamp when the operator attested the envelope. Required on relay envelopes (Phase 7 L7). Must be a full timestamp (sub-day resolution) — date-only is insufficient for replay-prevention."
+    },
+    "nonce": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Per-envelope unique identifier (ULID-like: monotonic base32-timestamp + random suffix). Combined with `in_reply_to` and `attested_at`, defends against replay attacks per Phase 7 L7/L8 (Packetlabs 2024 — nonces + timestamps are the minimum bar for any replay-able channel)."
     }
   },
   "$defs": {

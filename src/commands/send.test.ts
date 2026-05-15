@@ -5,9 +5,21 @@ import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { runInit } from "./init.js";
 import { runNew } from "./new.js";
-import { runSend } from "./send.js";
+import { runSend, _internal as _sendInternal } from "./send.js";
+import { bodyHash } from "../engine/body-hash.js";
 
 let dir: string;
+
+// B-TST-001 (Stage C wave 1): surface teardown failures and tolerate
+// transient Windows file-locks via maxRetries.
+function cleanupTempDir(p: string): void {
+  try {
+    rmSync(p, { recursive: true, force: true, maxRetries: 3 });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error("temp cleanup failed for", p, e);
+  }
+}
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "rig-bridge-send-"));
@@ -17,7 +29,7 @@ beforeEach(() => {
   spawnSync("git", ["config", "commit.gpgsign", "false"], { cwd: dir, encoding: "utf8" });
   runInit({ cwd: dir, rigId: "mac-m5max", displayName: "Mac Claude", stdout: () => {} });
   runNew({ cwd: dir, threadId: "thread-1", stdout: () => {} });
-  return () => rmSync(dir, { recursive: true, force: true });
+  return () => cleanupTempDir(dir);
 });
 
 describe("runSend", () => {
@@ -111,12 +123,18 @@ describe("runSend", () => {
   });
 
   it("rejects a --to with an invalid rig id (ingress validation)", () => {
+    // B-ENG-003 (parallel Commands wave): send.ts now case-normalizes --to
+    // ids at ingress (trim + lowercase), so "WINDOWS-5080" → "windows-5080"
+    // which is valid. The test fixture must use an input that remains
+    // invalid AFTER normalization to still exercise the validator-rejection
+    // branch. "Bad ID!" → "bad id!" still has a space + "!" so the rig-id
+    // pattern rejects it.
     expect(() =>
       runSend({
         cwd: dir,
         type: "HANDOFF",
         threadId: "thread-1",
-        to: ["WINDOWS-5080"],
+        to: ["Bad ID!"],
         noPush: true,
         stdout: () => {},
         stderr: () => {},
@@ -201,5 +219,86 @@ describe("runSend", () => {
     const text = readFileSync(r.filePath, "utf8");
     expect(text).toContain("loaded from file");
     expect(existsSync(bf)).toBe(true);
+  });
+
+  // F-TST-002 (CRITICAL by audit-agent): cross-rig CRLF-vs-LF determinism.
+  // Mac and 5080 hit `core.autocrlf` drift on round-trip; per §4.1 rule 1
+  // both forms must collapse to the same hash. This is the bedrock of
+  // cross-rig drift detection — if it fails, every cross-rig send is a
+  // false-positive drift event.
+  it("F-TST-002: CRLF and LF renderings of the same body hash identically", () => {
+    const crlfBody = "line A\r\nline B\r\nline C\r\n";
+    const lfBody = "line A\nline B\nline C\n";
+    const hCrlf = bodyHash(crlfBody);
+    const hLf = bodyHash(lfBody);
+    expect(hCrlf).toBe(hLf);
+    expect(hCrlf).toMatch(/^[0-9a-f]{64}$/);
+
+    // And drive both through runSend on distinct ordinals so we also prove
+    // the *persisted* body_hash matches between the two renderings.
+    const a = runSend({
+      cwd: dir,
+      type: "STATE",
+      threadId: "thread-1",
+      to: ["windows-5080"],
+      bodyText: crlfBody,
+      noPush: true,
+      stdout: () => {},
+      stderr: () => {},
+    });
+    const b = runSend({
+      cwd: dir,
+      type: "STATE",
+      threadId: "thread-1",
+      to: ["windows-5080"],
+      bodyText: lfBody,
+      noPush: true,
+      stdout: () => {},
+      stderr: () => {},
+    });
+    expect(a.bodyHash).toBe(b.bodyHash);
+  });
+
+  // F-TST-020: real mixed line endings (CRLF + LF + trailing spaces) on a
+  // single body must yield the same hash as the fully-LF-normalized form.
+  // This exercises rules 1+2 together — `core.autocrlf` can produce mixed
+  // endings on a single editor save when sections are inserted from
+  // different sources, and trailing whitespace drift is editor-default.
+  it("F-TST-020: mixed line endings + trailing whitespace collapse to canonical hash", () => {
+    const mixed = "line A\r\nline B\nline C  \n";
+    const canonical = "line A\nline B\nline C\n";
+    expect(bodyHash(mixed)).toBe(bodyHash(canonical));
+
+    const r = runSend({
+      cwd: dir,
+      type: "RESPONSE",
+      threadId: "thread-1",
+      to: ["windows-5080"],
+      bodyText: mixed,
+      noPush: true,
+      stdout: () => {},
+      stderr: () => {},
+    });
+    expect(r.bodyHash).toBe(bodyHash(canonical));
+    // And the persisted envelope's body_hash matches too.
+    const text = readFileSync(r.filePath, "utf8");
+    expect(text).toContain(`body_hash: ${bodyHash(canonical)}`);
+  });
+
+  // F-TST-006: ordinal exhaustion at the 1000-cap. send.ts caps at n < 1000
+  // and throws "exhausted ordinal range". Rather than create 999 files on
+  // disk (slow + flaky), exercise the internal chooseFilename helper with a
+  // pre-seeded thread dir. We seed RESPONSE.md + RESPONSE-2..RESPONSE-999.md
+  // and then assert chooseFilename throws.
+  it("F-TST-006: chooseFilename throws on exhausted ordinal range", () => {
+    const threadDir = join(dir, "thread-1");
+    // Seed bare + 2..999.
+    writeFileSync(join(threadDir, "RESPONSE.md"), "stub\n", "utf8");
+    for (let n = 2; n < 1000; n++) {
+      writeFileSync(join(threadDir, `RESPONSE-${n}.md`), "stub\n", "utf8");
+    }
+    expect(() =>
+      _sendInternal.chooseFilename(threadDir, "RESPONSE"),
+    ).toThrow(/exhausted ordinal range/);
   });
 });

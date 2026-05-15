@@ -2,11 +2,12 @@
 
 ## Supported Versions
 
-<!-- Replace with your version table -->
+| Version            | Supported |
+|--------------------|-----------|
+| 0.0.1-pre-swarm    | Yes       |
+| < 0.0.1-pre-swarm  | No        |
 
-| Version | Supported |
-|---------|-----------|
-| latest  | Yes       |
+Pre-release versions receive security patches; only the latest pre-release is supported.
 
 ## Reporting a Vulnerability
 
@@ -28,10 +29,10 @@ Include:
 
 ## Scope
 
-<!-- Customize per-product. Examples: -->
+This tool operates **locally** against a git remote configured by the operator.
 
-This tool operates **locally only**.
-- **Data touched:** <!-- e.g., local log files, process metrics -->
-- **No network egress** unless explicitly configured
-- **No secrets handling** — does not read, store, or transmit credentials
-- **No telemetry** is collected or sent
+- **Data touched:** the local clone of the bridge repo + `.bridge/config.yaml` (rig identifier + optional display_name) + message files (markdown with YAML frontmatter). No database. No telemetry endpoints.
+- **Network egress:** only to the configured git remote (GitHub via HTTPS by default). No other network access.
+- **Permissions required:** read/write access to the local bridge repo and `.bridge/` directory; git credentials for push (delegated to the operator's existing git config).
+- **No telemetry by default** — rig-bridge does not collect, transmit, or persist any usage data. The only data that leaves the local machine is the commits the operator explicitly pushes.
+- **Trust model:** rig-bridge trusts GitHub TLS for transport integrity and trusts the local git config for authorship. It does not sign commits itself; operators can layer GPG/SSH commit signing via existing git mechanisms.

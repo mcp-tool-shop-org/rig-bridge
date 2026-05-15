@@ -12,6 +12,17 @@ export type RigIdResult =
   | { ok: true }
   | { ok: false; reason: string };
 
+// Pure normalization: trim outer whitespace + lowercase. No validation —
+// just produces the canonical form for ingress points to suggest. The
+// composition (normalize-then-validate) is deliberately the caller's
+// choice so the helpers stay independently testable and reusable.
+//
+// Per B-ENG-003: validateRigId stays a pure predicate; the helper is
+// available for Commands-layer ingress to compose into a real auto-fix.
+export function normalizeRigId(s: string): string {
+  return s.trim().toLowerCase();
+}
+
 export function validateRigId(id: unknown): RigIdResult {
   if (typeof id !== "string") {
     return { ok: false, reason: "rig id must be a string" };
@@ -20,13 +31,22 @@ export function validateRigId(id: unknown): RigIdResult {
     return { ok: false, reason: "rig id must not be empty" };
   }
   if (!RIG_ID_PATTERN.test(id)) {
-    return {
-      ok: false,
-      reason:
-        `rig id "${id}" is not a canonical kebab-case slug ` +
-        `(must match /^[a-z][a-z0-9-]*$/ — start with a letter, ` +
-        `lowercase letters/digits/hyphens only)`,
-    };
+    // Build the base failure reason, then offer a suggestion if the
+    // normalized form (trim + lowercase) would itself validate. The
+    // suggestion is informational only — validateRigId does NOT call
+    // normalizeRigId on the input; that auto-fix is the caller's call.
+    const base =
+      `rig id "${id}" is not a canonical kebab-case slug ` +
+      `(must match /^[a-z][a-z0-9-]*$/ — start with a letter, ` +
+      `lowercase letters/digits/hyphens only)`;
+    const normalized = normalizeRigId(id);
+    if (normalized !== id && RIG_ID_PATTERN.test(normalized)) {
+      return {
+        ok: false,
+        reason: `${base}. Did you mean "${normalized}"?`,
+      };
+    }
+    return { ok: false, reason: base };
   }
   return { ok: true };
 }

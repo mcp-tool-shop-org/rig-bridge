@@ -33,6 +33,14 @@ export interface GitRunResult {
   stderr: string;
 }
 
+// 50 MB stdout/stderr cap for git invocations (B-ENG-004). Node's default
+// is 1 MB which silently truncates large outputs and then surfaces as a
+// confusing ERR_CHILD_PROCESS_STDIO_MAXBUFFER. Lift the cap to a
+// generous-but-bounded value and translate the Node error into a clean
+// GitError so an operator on a giant repo sees an actionable hint
+// instead of a cryptic Node-level crash.
+const GIT_MAX_BUFFER = 50 * 1024 * 1024;
+
 export function runGit(
   args: string[],
   cwd: string,
@@ -41,9 +49,20 @@ export function runGit(
   const r = spawnSync("git", args, {
     cwd,
     encoding: "utf8",
+    maxBuffer: GIT_MAX_BUFFER,
     ...opts,
   });
   if (r.error) {
+    // Node surfaces buffer-overflow as a NodeJS.ErrnoException with
+    // code "ERR_CHILD_PROCESS_STDIO_MAXBUFFER". Wrap with a clear
+    // operator-facing hint about narrowing the invocation rather than
+    // bubbling the raw Node error.
+    const err = r.error as NodeJS.ErrnoException;
+    if (err.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
+      throw new GitError(
+        `git ${args[0]} output exceeded 50MB buffer. Try a narrower invocation.`,
+      );
+    }
     throw new GitError(`git ${args[0]} failed to spawn: ${r.error.message}`);
   }
   return {

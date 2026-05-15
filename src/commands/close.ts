@@ -8,63 +8,34 @@
 // most-frequent non-self counterpart. If no prior envelope is parseable,
 // fall back to the local rig id (self-addressed terminal marker — a
 // degenerate but schema-valid case for an empty thread).
+//
+// OUTPUT DISCIPLINE (B-CMD-002 / B-CMD-003, Stage C wave 1):
+//   * stdout is the stable, parseable contract — one line of key=value
+//     pairs (type=RESOLUTION thread=<id> status=<completed|cancelled>
+//     commit=<sha7>). Phase 7's scanner does
+//     `awk '/^rig-bridge: closed /'` and parses key=value pairs.
+//   * stderr is the human-readable narrative — natural prose for
+//     operators reading the terminal.
 
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseEnvelope } from "../engine/envelope.js";
-import { validateRigId } from "../engine/rig-id.js";
 import { repoRoot, safeCommit, safePush, type SafeCommitResult } from "../engine/git.js";
 import { readConfig } from "../engine/config.js";
 import { renderEnvelope } from "../engine/envelope.js";
 import { validateFrontmatter } from "../engine/schema-validator.js";
 import { bodyHash } from "../engine/body-hash.js";
 import { markerToStatusClass, type StatusClass } from "../engine/status.js";
+import { findPeerRigs } from "../engine/peer-rigs.js";
+
+// B-ENG-003 cross-cutting fix: case-normalize rig-ids at every ingress.
+// In close.ts the ingress site WAS the inline peer-rig inference loop;
+// that loop is now the engine helper `findPeerRigs`, which performs the
+// same normalize+validate+count discipline (and a wider scan — every
+// thread in the bridge, not just the one being closed). The behavior
+// preserved here: pick the most-frequent non-self rig from the bridge
+// corpus, fall back to selfRigId for a degenerate empty-thread close.
 
 export type CloseStatus = "cancelled" | "completed";
-
-function inferPeerRig(threadDir: string, selfRigId: string): string | null {
-  let entries: string[];
-  try {
-    entries = readdirSync(threadDir);
-  } catch {
-    return null;
-  }
-  const counts = new Map<string, number>();
-  for (const e of entries) {
-    if (!e.endsWith(".md")) continue;
-    let raw: string;
-    try {
-      raw = readFileSync(join(threadDir, e), "utf8");
-    } catch {
-      continue;
-    }
-    let env;
-    try {
-      env = parseEnvelope(raw);
-    } catch {
-      continue;
-    }
-    const candidates: unknown[] = [];
-    if (typeof env.frontmatter.from === "string") candidates.push(env.frontmatter.from);
-    if (Array.isArray(env.frontmatter.to)) candidates.push(...env.frontmatter.to);
-    else if (typeof env.frontmatter.to === "string") candidates.push(env.frontmatter.to);
-    for (const c of candidates) {
-      if (typeof c !== "string") continue;
-      if (c === selfRigId) continue;
-      if (!validateRigId(c).ok) continue;
-      counts.set(c, (counts.get(c) ?? 0) + 1);
-    }
-  }
-  let best: string | null = null;
-  let bestCount = 0;
-  for (const [rig, n] of counts) {
-    if (n > bestCount) {
-      best = rig;
-      bestCount = n;
-    }
-  }
-  return best;
-}
 
 const MARKER_FOR: Record<CloseStatus, string> = {
   cancelled: "❌",
@@ -130,7 +101,14 @@ export function runClose(args: CloseArgs): CloseResult {
     (args.note ? `${args.note}\n\n` : "") +
     `Standing by.\n`;
 
-  const peerTo = inferPeerRig(threadDir, cfg.rig_id) ?? cfg.rig_id;
+  // Phase 7 refactor (wave 2B): the old inline `inferPeerRig` has been
+  // replaced with the engine helper `findPeerRigs`, which is the single
+  // source of truth for non-self rig discovery (also used by `relay`
+  // and `status`). The helper scans every thread in the bridge — the
+  // previous shape only scanned the closing thread. Behavior delta is
+  // intentional + minor: a thread whose own envelopes are sparse but
+  // whose peer is well-known from other threads now resolves correctly.
+  const peerTo = findPeerRigs(root, cfg.rig_id)[0]?.rig_id ?? cfg.rig_id;
 
   const frontmatter: Record<string, unknown> = {
     from: cfg.rig_id,
@@ -142,6 +120,16 @@ export function runClose(args: CloseArgs): CloseResult {
   };
   if (cfg.display_name) frontmatter.display_name = cfg.display_name;
 
+  // body_hash is part of the envelope (Q6 / G-001 close): SHA-256 of the
+  // §4.1-normalized body. Compute BEFORE validation so the schema sees the
+  // populated field AND the rendered RESOLUTION.md actually carries the
+  // hash. Receiving rigs re-hash on pull and compare to detect drift —
+  // without this field, drift detection has nothing to compare against.
+  // Mirrors the order used in send.ts (see send.ts §"body_hash is part of
+  // the envelope" comment) — the order is load-bearing.
+  const hash = bodyHash(body);
+  frontmatter.body_hash = hash;
+
   const validation = validateFrontmatter(frontmatter);
   if (!validation.valid) {
     throw new Error(
@@ -149,23 +137,65 @@ export function runClose(args: CloseArgs): CloseResult {
     );
   }
 
-  const hash = bodyHash(body);
   const text = renderEnvelope({ frontmatter, body });
   writeFileSync(filePath, text, "utf8");
 
-  const commitResult: SafeCommitResult = safeCommit({
-    files: [filePath],
-    message: `RESOLUTION: ${args.threadId} ${closeStatus}`,
-    cwd: root,
-    stderr,
-  });
-
-  if (!args.noPush) {
-    safePush({ cwd: root });
+  // F-CMD-008: if commit fails (missing git identity, hook failure, etc.)
+  // the freshly-written envelope file is orphaned on disk; a naive retry
+  // then dies with "file already exists" until the operator manually deletes
+  // it. Clean up the orphan before re-throwing so retry is straightforward.
+  // We deliberately surface BOTH the cleanup note and the original error.
+  let commitResult: SafeCommitResult;
+  try {
+    commitResult = safeCommit({
+      files: [filePath],
+      message: `RESOLUTION: ${args.threadId} ${closeStatus}`,
+      cwd: root,
+      stderr,
+    });
+  } catch (e) {
+    try {
+      unlinkSync(filePath);
+    } catch {
+      // If cleanup itself fails (permissions, already-removed), proceed
+      // with the original throw — surfacing the commit failure matters
+      // more than the cleanup error.
+    }
+    const orig = (e as Error).message ?? String(e);
+    throw new Error(
+      `rig-bridge: commit failed and the unpushed envelope at ${filePath} was removed so you can retry cleanly. Original error: ${orig}`,
+    );
   }
 
+  if (!args.noPush) {
+    // F-CMD-010: if push fails (non-fast-forward, network), the commit
+    // landed locally but is unpushed. Print a clear operator-recovery
+    // message to stderr before re-throwing the original error so callers
+    // and tests still see the actual failure.
+    try {
+      safePush({ cwd: root });
+    } catch (e) {
+      stderr(
+        `rig-bridge: commit landed locally but push failed.\n` +
+          `To recover:  cd ${root}; git pull --rebase; git push\n` +
+          `Or retry the original send with --no-push to skip the push step.\n`,
+      );
+      throw e;
+    }
+  }
+
+  // B-CMD-003 split:
+  //   stdout: parseable contract line — type=RESOLUTION thread=<id>
+  //           status=<completed|cancelled> commit=<sha7>. Phase 7's
+  //           scanner does `awk '/^rig-bridge: closed /'` and parses
+  //           key=value pairs.
+  //   stderr: natural prose for operators reading the terminal.
+  const sha7 = commitResult.commitSha.slice(0, 7);
   stdout(
-    `rig-bridge: closed ${args.threadId} (${closeStatus}, ${commitResult.commitSha.slice(0, 7)})\n`,
+    `rig-bridge: closed type=RESOLUTION thread=${args.threadId} status=${closeStatus} commit=${sha7}\n`,
+  );
+  stderr(
+    `rig-bridge: closed thread ${args.threadId} (${closeStatus}); committed as ${sha7}\n`,
   );
 
   return {

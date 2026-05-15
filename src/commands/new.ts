@@ -4,9 +4,16 @@
 // thread directory, and writes a REQUEST.md template with frontmatter
 // pre-filled from the config (`from`, today's date, type=REQUEST).
 // Errors if the file already exists, unless --force.
+//
+// OUTPUT DISCIPLINE (B-CMD-002 / B-CMD-003, Stage C wave 1):
+//   * stdout is the stable, parseable contract — one line of key=value
+//     pairs. `file=` is the repo-relative path (thread/FILENAME.md),
+//     never an absolute filesystem path.
+//   * stderr is the human-readable narrative — full paths and operator
+//     guidance.
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { repoRoot } from "../engine/git.js";
 import { readConfig } from "../engine/config.js";
 import { renderEnvelope } from "../engine/envelope.js";
@@ -19,8 +26,10 @@ export interface NewArgs {
   cwd: string;
   threadId: string;
   force?: boolean;
-  /** stdout writer (injected for tests) */
+  /** stdout writer (injected for tests). Parseable contract — one key=value line. */
   stdout?: (line: string) => void;
+  /** stderr writer (injected for tests). Human-readable narrative — full paths. */
+  stderr?: (line: string) => void;
 }
 
 export interface NewResult {
@@ -33,6 +42,7 @@ function todayIso(): string {
 
 export function runNew(args: NewArgs): NewResult {
   const stdout = args.stdout ?? ((s: string) => process.stdout.write(s));
+  const stderr = args.stderr ?? ((s: string) => process.stderr.write(s));
 
   if (!THREAD_ID_PATTERN.test(args.threadId)) {
     throw new Error(
@@ -74,6 +84,16 @@ export function runNew(args: NewArgs): NewResult {
   const text = renderEnvelope({ frontmatter, body });
   writeFileSync(filePath, text, "utf8");
 
-  stdout(`rig-bridge: scaffolded ${filePath}\n`);
+  // B-CMD-003 split:
+  //   stdout: parseable contract line — `type=REQUEST thread=<id>
+  //           file=<thread>/REQUEST.md`. Repo-relative `file=` path so a
+  //           Phase 7 scanner can `awk '/^rig-bridge: scaffolded /'` and
+  //           parse the key=value pairs without dealing with host layout.
+  //   stderr: full filesystem path + natural prose for operators.
+  const relPath = relative(root, filePath).replace(/\\/g, "/");
+  stdout(
+    `rig-bridge: scaffolded type=REQUEST thread=${args.threadId} file=${relPath}\n`,
+  );
+  stderr(`rig-bridge: scaffolded ${filePath}\n`);
   return { filePath };
 }

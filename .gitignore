@@ -19,3 +19,4 @@ ehthumbs.db
 .env
 .env.local
 .bridge/config.yaml
+site/.astro/

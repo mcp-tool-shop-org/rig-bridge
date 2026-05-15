@@ -4,14 +4,20 @@ on:
   push:
     paths:
       - "package.json"
+      - "package-lock.json"
       - "tsconfig.json"
       - "src/**"
+      - "schemas/**"
+      - "docs/**"
       - ".github/workflows/**"
   pull_request:
     paths:
       - "package.json"
+      - "package-lock.json"
       - "tsconfig.json"
       - "src/**"
+      - "schemas/**"
+      - "docs/**"
       - ".github/workflows/**"
   workflow_dispatch:
 
@@ -22,13 +28,48 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:
-          node-version: "20"
+          node-version: "20.11.0"
           cache: "npm"
       - run: npm ci
+      - name: Audit dependencies
+        # TODO: tighten to --audit-level=high once vitest v4 lands (currently fast-uri@<=3.1.0 is a transitive HIGH via vitest@2).
+        run: npm audit --audit-level=critical
       - run: npm run typecheck
       - run: npm run build
-      - run: npm test --if-present
+      - name: Built-CLI smoke
+        run: |
+          BUILT_VERSION=$(node dist/cli.js --version)
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$BUILT_VERSION" != "$PKG_VERSION" ]; then
+            echo "Version mismatch: built CLI says $BUILT_VERSION, package.json says $PKG_VERSION"
+            exit 1
+          fi
+          echo "Built CLI smoke OK: $BUILT_VERSION"
+      - name: Tests
+        run: npm test --if-present 2>&1 | tee test-output.log
+      - name: CI summary
+        if: always()
+        run: |
+          {
+            echo "## rig-bridge CI summary"
+            echo ""
+            if [ -f test-output.log ]; then
+              TEST_COUNT=$(grep -oP '\d+(?= passed)' test-output.log | head -1 || echo "n/a")
+              echo "- Tests: ${TEST_COUNT} passing"
+            else
+              echo "- Tests: log not found"
+            fi
+            AUDIT_JSON=$(npm audit --json 2>/dev/null || echo '{}')
+            CRIT=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.critical // 0')
+            HIGH=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.high // 0')
+            MOD=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.moderate // 0')
+            echo "- Audit: ${CRIT} critical / ${HIGH} high / ${MOD} moderate"
+            echo "- Node: ${{ matrix.node-version || '20.11.0' }}"
+            echo "- OS: ${{ runner.os }}"
+          } >> $GITHUB_STEP_SUMMARY

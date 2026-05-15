@@ -25,8 +25,23 @@ import { runSend } from "./commands/send.js";
 import { runClose } from "./commands/close.js";
 import { parseEnvelope } from "./engine/envelope.js";
 import { validateFrontmatter } from "./engine/schema-validator.js";
+import { bodyHash } from "./engine/body-hash.js";
 
 let dir: string;
+
+// B-TST-001 (Stage C wave 1): wrap temp-dir cleanup so a transient Windows
+// file-lock or a swallowed error during teardown surfaces in test output
+// instead of silently corrupting the next test's environment. `force` keeps
+// teardown best-effort; `maxRetries` survives EBUSY/EPERM on Windows when a
+// child process is briefly still holding a handle.
+function cleanupTempDir(p: string): void {
+  try {
+    rmSync(p, { recursive: true, force: true, maxRetries: 3 });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error("temp cleanup failed for", p, e);
+  }
+}
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "rig-bridge-smoke-"));
@@ -34,7 +49,7 @@ beforeEach(() => {
   spawnSync("git", ["config", "user.email", "smoke@test"], { cwd: dir, encoding: "utf8" });
   spawnSync("git", ["config", "user.name", "Smoke Test"], { cwd: dir, encoding: "utf8" });
   spawnSync("git", ["config", "commit.gpgsign", "false"], { cwd: dir, encoding: "utf8" });
-  return () => rmSync(dir, { recursive: true, force: true });
+  return () => cleanupTempDir(dir);
 });
 
 describe("rig-bridge round-trip smoke", () => {
@@ -90,6 +105,13 @@ describe("rig-bridge round-trip smoke", () => {
       expect(env.frontmatter.from).toBe("mac-m5max");
       expect(env.frontmatter.to).toBe("windows-5080");
       expect(env.frontmatter.tldr).toBe("smoke-test handoff");
+      // F-TST-013 (CRITICAL): body_hash round-trip invariant on HANDOFF.
+      // Re-read the disk envelope, parse it, recompute the hash from the
+      // parsed body, and assert it matches the persisted body_hash. This is
+      // the canonical drift-detection invariant — a receiving rig does
+      // exactly this on pull.
+      expect(env.frontmatter.body_hash).toBe(sendRes.bodyHash);
+      expect(bodyHash(env.body)).toBe(env.frontmatter.body_hash);
     }
 
     // 4. close test-thread --status completed --note "Done"
@@ -112,6 +134,11 @@ describe("rig-bridge round-trip smoke", () => {
       // Peer-inference picked up the previous HANDOFF's `to: windows-5080`
       // and routed the RESOLUTION back to the same peer.
       expect(env.frontmatter.to).toBe("windows-5080");
+      // F-TST-013 (CRITICAL): body_hash round-trip invariant on RESOLUTION.
+      // The close command must persist body_hash too — without it, a peer
+      // pulling the RESOLUTION cannot detect body drift on the close.
+      expect(env.frontmatter.body_hash).toBe(closeRes.bodyHash);
+      expect(bodyHash(env.body)).toBe(env.frontmatter.body_hash);
     }
 
     // The thread directory holds REQUEST.md, HANDOFF.md, RESOLUTION.md
@@ -133,5 +160,72 @@ describe("rig-bridge round-trip smoke", () => {
     expect(lines.length).toBe(2);
     expect(lines[0]).toContain("RESOLUTION");
     expect(lines[1]).toContain("HANDOFF");
+  });
+
+  // F-TST-013 (CRITICAL): the body_hash round-trip invariant is the load-
+  // bearing success bar for the rig-bridge transport. The bridge works
+  // because every envelope written by send/close carries a sha256 of its
+  // §4.1-normalized body, and the receiving rig re-hashes on pull to detect
+  // drift. This test exhaustively walks the thread directory after a full
+  // init → new → send → close round-trip and verifies that for every
+  // envelope authored by the CLI (HANDOFF from send + RESOLUTION from close)
+  // re-reading from disk and re-hashing matches the persisted body_hash.
+  // REQUEST.md scaffolded by `new` is not authored via the CLI's send/close
+  // pipeline (the operator fills it in), so it is exempted.
+  it("body_hash round-trip invariant holds for every sent + closed envelope", () => {
+    runInit({
+      cwd: dir,
+      rigId: "mac-m5max",
+      displayName: "Mac Claude",
+      stdout: () => {},
+    });
+    runNew({ cwd: dir, threadId: "drift-thread", stdout: () => {} });
+    const sent = runSend({
+      cwd: dir,
+      type: "HANDOFF",
+      threadId: "drift-thread",
+      to: ["windows-5080"],
+      status: "▶ wave",
+      bodyText:
+        "# Drift body\n\nMixed endings: line A\r\nline B\nline C  \n\nTrailing whitespace stripped.\n",
+      noPush: true,
+      stdout: () => {},
+      stderr: () => {},
+    });
+    const closed = runClose({
+      cwd: dir,
+      threadId: "drift-thread",
+      status: "completed",
+      note: "Drift smoke close",
+      noPush: true,
+      stdout: () => {},
+      stderr: () => {},
+    });
+
+    // Walk both files written by the CLI's send/close pipeline. REQUEST.md
+    // is intentionally skipped because the operator authors that body, not
+    // the CLI — its body_hash is unset by design.
+    const writtenFiles = [sent.filePath, closed.filePath];
+    for (const path of writtenFiles) {
+      const raw = readFileSync(path, "utf8");
+      const env = parseEnvelope(raw);
+      // body_hash is REQUIRED on send/close output for drift detection.
+      expect(env.frontmatter.body_hash).toMatch(/^[0-9a-f]{64}$/);
+      // Re-hash the disk body and confirm it matches.
+      const rehash = bodyHash(env.body);
+      expect(rehash).toBe(env.frontmatter.body_hash);
+    }
+
+    // And confirm the SendResult / CloseResult bodyHash fields agree with
+    // what landed on disk — i.e. the in-process hash is what the receiver
+    // would compare against.
+    {
+      const env = parseEnvelope(readFileSync(sent.filePath, "utf8"));
+      expect(env.frontmatter.body_hash).toBe(sent.bodyHash);
+    }
+    {
+      const env = parseEnvelope(readFileSync(closed.filePath, "utf8"));
+      expect(env.frontmatter.body_hash).toBe(closed.bodyHash);
+    }
   });
 });
