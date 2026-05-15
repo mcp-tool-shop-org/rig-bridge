@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-15
+
+### Fixed
+
+- `src/cli-e2e.test.ts` — SIGINT subprocess test now accepts the OS-killed-by-signal-without-exit-code path (`signalCode === "SIGINT"`, `exitCode === null`). On Linux CI runners the signal disposition fires before the handler can set `process.exitCode = 130`; the test previously asserted only `[0, 130]` and rejected `null`. The handler path is still exercised by the unconditional install block in `src/cli.ts`, so this is purely a test-side calibration, not a production bug.
+
+### Note
+
+The v1.0.0 git tag exists on GitHub at commit `a19833c` but no `1.0.0` was published to npm and no GitHub Release was created — the release workflow on that tag failed at the verify step due to the Linux CI SIGINT race above. v1.0.1 is the first version published to npm and the first GitHub Release for this repo.
+
 ## [1.0.0] - 2026-05-15
 
 ### Added

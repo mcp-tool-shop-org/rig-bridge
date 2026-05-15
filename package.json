@@ -1,6 +1,6 @@
 {
   "name": "@mcptoolshop/rig-bridge",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Cross-rig sync tool for paired dev machines — git-native typed-envelope cross-agent handoffs",
   "type": "module",
   "bin": {
