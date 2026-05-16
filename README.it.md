@@ -12,15 +12,15 @@
   <a href="https://mcp-tool-shop-org.github.io/rig-bridge/"><img src="https://img.shields.io/badge/landing-page-2563eb" alt="Landing Page" /></a>
 </p>
 
-**Stato:** La fase 7 (seconda ondata di implementazione delle funzionalità) è stata completata. Superficie di trasporto v1.0.0: **8 comandi CLI su 8 implementati** (init / new / send / close / status / thread / sync / relay). La superficie di trasporto è completa; la versione v1.1 include l'integrazione con il piano di controllo.
+**Stato:** La versione v1.0.x è disponibile su npm. **8 comandi CLI** (init / new / send / close / status / thread / sync / relay). Rilevamento della deriva tra diversi sistemi, testato tramite test end-to-end su più sistemi (trasporto CRLF/LF, topologia a 3 sistemi). La versione v1.1 prevede l'integrazione con il piano di controllo.
 
 Strumento di sincronizzazione cross-rig per ambienti di sviluppo accoppiati: trasferimento di dati tra agenti tramite envelope tipizzati nativi di Git.
 
 ## Cosa è disponibile oggi
 
-**Superficie di trasporto v1.0.0 completata:**
+**Interfaccia di trasporto v1.0.x (completa):**
 
-Tutti e 8 i comandi CLI della versione v1.0.0, insieme alle librerie di supporto del motore sottostanti. La versione v1.0.0 include il trasporto Git autonomo; l'integrazione con il piano di controllo è prevista per la versione v1.1 (Percorso B-2; vedere [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md)).
+Tutti e 8 i comandi CLI, oltre alle funzioni di supporto del motore sottostanti. La versione v1.0.x include il trasporto Git separatamente; l'integrazione con il piano di controllo è prevista per la versione v1.1 (Percorso B-2; vedere [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md)).
 
 Comandi per la creazione:
 
@@ -39,20 +39,21 @@ Comandi di sincronizzazione e attestazione:
 - `rig-bridge sync` — esegue un pull fast-forward, mostrando le divergenze (rifiuta i pull non fast-forward a meno che non si utilizzi l'opzione `--auto`; mostra le divergenze nominate al limite della sincronizzazione, secondo la semantica di Fossil).
 - `rig-bridge relay <type> --thread <id> --in-reply-to <hash>` — crea una risposta/conferma/accettazione attestata manualmente (richiede un suffisso `rig-id` con `-relay` e una chiave di firma Git configurata; genera un blocco di attestazione con `attested_by`, `attested_at` e un `nonce` ULID).
 
-Librerie di supporto del motore (in `src/engine/`):
+Funzioni di supporto del motore (presenti in `src/engine/`, riesportate da `src/engine/index.ts` come interfaccia di consumo del piano di controllo per la versione v1.1):
 
-- `envelope.ts` — analisi/generazione del frontmatter YAML.
-- `schema-validator.ts` — validazione basata su Ajv rispetto al file `schemas/bridge-message.schema.json`.
-- `body-hash.ts` — calcolo dell'hash SHA-256 sul corpo normalizzato secondo la sezione 4.1 (rimozione del BOM, conversione CRLF→LF, rimozione degli spazi finali, presenza di esattamente una nuova riga finale).
-- `status.ts` — derivazione della classe di stato a partire dal marcatore secondo la sezione 4.2 (`▶ active`, `⏸ pending`, `🎯 targeted`, `✅ completed`, `❌ cancelled`).
-- `rig-id.ts` — validazione dell'ID univoco dell'ambiente in formato kebab-case all'ingresso della CLI.
-- `git.ts` — wrapper Git con protezioni per submodule, dimensione e elementi specifici del sistema operativo.
-- `config.ts` — lettore/scrittore del file `.bridge/config.yaml`.
-- `list-threads.ts` — elenca i thread aperti dall'albero di lavoro (per il comando `status`).
-- `peers.ts` — `findPeerRigs` — scopre gli ID univoci degli ambienti peer a partire dalla cronologia degli envelope (sostituisce la funzione `inferPeerRig` inline).
-- `git-diff.ts` — `gitDiffSinceLastSync` — mostra i nuovi file a partire dall'ultimo pull riuscito (motore di sincronizzazione).
-- `hash-verify.ts` — `verifyHash` — ricalcola e confronta l'hash del corpo per garantire l'integrità della catena `in_reply_to` (motore di relay).
-- `envelope-file.ts` — `validateEnvelopeFile` — analizza e valida uno schema di un file in un'unica chiamata (utilizzato da `thread`, `sync` e `relay`).
+- `envelope.ts` — Analisi/generazione del frontmatter YAML.
+- `schema-validator.ts` — Validazione basata su Ajv rispetto a `schemas/bridge-message.schema.json`.
+- `body-hash.ts` — Calcolo dell'hash SHA-256 sul corpo normalizzato secondo la sezione 4.1 (CRLF→LF, rimozione degli spazi finali, esattamente una nuova riga finale, rimozione del BOM).
+- `status.ts` — Derivazione della classe di stato da un marcatore secondo la sezione 4.2 (`▶ attivo`, `⏸ in attesa`, `🎯 mirato`, `✅ completato`, `❌ annullato`).
+- `rig-id.ts` — Validazione dell'ID del sistema in formato kebab-case standard + funzione di supporto `normalizeRigId` per l'input.
+- `git.ts` — Wrapper Git con protezioni per submodule, dimensione e elementi specifici del sistema operativo (buffer massimo di 50 MB durante `spawnSync`).
+- `config.ts` — Lettore/scrittore di `.bridge/config.yaml` (normalizzazione della fine delle righe prima dell'analisi YAML per la compatibilità con Windows autocrlf).
+- `threads.ts` — `listThreads` — Elenca i thread aperti dall'albero di lavoro (per `status`).
+- `peer-rigs.ts` — `findPeerRigs` — Scopre gli ID dei sistemi peer standard dalla cronologia delle buste (sostituisce `inferPeerRig` inline).
+- `git-diff.ts` — `gitDiffSinceLastSync` — Mostra i nuovi file dall'ultimo pull riuscito (motore di sincronizzazione; flag di idoneità per il fast-forward).
+- `verify-hash.ts` — `verifyHash` — Ricalcola e confronta l'hash del corpo per l'integrità della catena `in_reply_to` (motore di relay).
+- `validate-file.ts` — `validateEnvelopeFile` — Analizza, valida tramite schema e verifica l'hash in un'unica chiamata (utilizzato da `thread`, `sync`, `relay`).
+- `index.ts` — Modulo principale dell'API pubblica stabile; scrittore del piano di controllo v1.1 + i moduli consumer downstream importano da qui.
 
 **Deliverable della Fase 0 (ancora validi):**
 
@@ -65,13 +66,11 @@ Librerie di supporto del motore (in `src/engine/`):
 
 ## Installazione
 
-### Da npm (versione 1.0.0+)
+### Disponibile su npm
 
 ```bash
 npm install -g @mcptoolshop/rig-bridge
 ```
-
-> **Nota:** il pacchetto è attualmente in fase di pre-rilascio (`0.0.1-pre-swarm`). La versione 1.0.0 verrà pubblicata su npm durante la fase 10 del prossimo "dogfood swarm". Nel frattempo, installare dal codice sorgente (vedi sotto).
 
 ### Dal codice sorgente
 
@@ -100,11 +99,11 @@ Questo comando dovrebbe stampare la versione indicata nel file `package.json`.
 
 macOS, Linux e Windows 10+ — tutte e tre le piattaforme sono testate tramite CI ad ogni commit.
 
-## Cosa sarà
+## Cos'è
 
 Una libreria e un'interfaccia a riga di comando (CLI) che consentono a due (o più) istanze di Claude su rig diversi di coordinarsi tramite un repository Git condiviso, utilizzando un protocollo di inviluppo tipizzato che ha superato il primo contatto durante una sessione organica di 16 commit tra un Mac e un rig GPU Windows il 29 aprile 2026.
 
-La versione 1.0.0 include tutti e 8 i comandi come parte del sistema di trasporto. La versione 1.1 aggiunge l'integrazione con il control plane, in modo che gli inviluppi vengano scritti nel database SQLite di `swarm-control-plane` come livello di persistenza — vedere [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md).
+La versione v1.0.x include tutti e 8 i comandi come interfaccia di trasporto. La versione v1.1 aggiungerà l'integrazione con il piano di controllo, in modo che le buste vengano scritte in SQLite di `swarm-control-plane` come livello di verità duratura; vedere [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md).
 
 Il protocollo gestisce il proprio inviluppo (indipendente dal protocollo di trasporto). Git è il collegamento tra i rig; nella versione 1.1, il control plane diventa lo stato persistente.
 

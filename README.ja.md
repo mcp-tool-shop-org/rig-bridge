@@ -12,15 +12,15 @@
   <a href="https://mcp-tool-shop-org.github.io/rig-bridge/"><img src="https://img.shields.io/badge/landing-page-2563eb" alt="Landing Page" /></a>
 </p>
 
-**ステータス:** 7フェーズ（機能実行フェーズ2）が完了しました。v1.0.0の伝送レイヤー：**8つのCLIコマンドのうち8つが実装済み**（init / new / send / close / status / thread / sync / relay）。伝送レイヤーは完了しました。v1.1では、コントロールプレーンの統合が開始されます。
+**ステータス:** v1.0.x が npm でリリースされました。**8つの CLI コマンド** (init / new / send / close / status / thread / sync / relay) が提供されています。異なる環境での動作確認（CRLF/LF の転送、3つの環境での構成）により、環境による動作のずれを検出する機能が検証されています。v1.1 では、制御面との連携機能が追加されます。
 
 ペアになった開発環境用の同期ツール。Gitネイティブな型付きエンベロープによる、エージェント間のデータ転送。
 
 ## 本日提供されている機能
 
-**v1.0.0の伝送レイヤーが完了:**
+**v1.0.x の機能 (完了):**
 
-v1.0.0の8つのCLIコマンドと、それらを支えるエンジンヘルパーが含まれています。v1.0.0では、Gitの伝送機能が独立して提供されます。コントロールプレーンの統合はv1.1にdeferされます（Path B-2。詳細は[docs/v1.1-roadmap.md](docs/v1.1-roadmap.md)を参照）。
+8つの CLI コマンドと、それらを支えるエンジン関連機能が含まれています。v1.0.x では、Git 関連機能が独立して提供されます。制御面との連携機能は、v1.1 で実装されます (Path B-2。詳細は [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md) を参照)。
 
 コマンドの概要：
 
@@ -39,20 +39,21 @@ v1.0.0の8つのCLIコマンドと、それらを支えるエンジンヘルパ�
 - `rig-bridge sync`: 差分がある場合にのみプルを実行します（非差分の場合には`--auto`オプションが必要です）。名前付きの差分を同期の境界で表示します（Fossilのセマンティクスに準拠）。
 - `rig-bridge relay <type> --thread <id> --in-reply-to <hash>`: 人間が確認したDECISIONS/RESPONSE/ACKのターン（`-relay`サフィックスを持つrig-idとGitの署名キーが必要です。`attested_by`、`attested_at`、およびULIDのnonceを含む認証ブロックを出力します）。
 
-エンジンヘルパー（`src/engine/`内）：
+エンジン関連機能 ( `src/engine/` にあり、`src/engine/index.ts` から再エクスポートされ、v1.1 の制御面連携機能で使用されます):
 
-- `envelope.ts`: YAMLフロントマターの解析/レンダリング
-- `schema-validator.ts`: `schemas/bridge-message.schema.json`に対するAjvによる検証
-- `body-hash.ts`: §4.1で正規化された本文に対するSHA-256ハッシュ計算（BOMの削除、CRLF→LFへの変換、末尾の空白の削除、正確に1つの改行）
-- `status.ts`: マーカーからステータスクラスを導出（§4.2: `▶ active`、`⏸ pending`、`🎯 targeted`、`✅ completed`、`❌ cancelled`）
-- `rig-id.ts`: CLIからの入力における、標準的なkebab-case形式のrig idの検証
-- `git.ts`: サブモジュール、サイズ、およびOS固有の情報を扱うGitラッパー
-- `config.ts`: `.bridge/config.yaml`ファイルの読み込み/書き込み
-- `list-threads.ts`: 作業ツリーから実行中のスレッドを列挙（`status`コマンド用）
-- `peers.ts`: `findPeerRigs` - エンベロープの履歴から標準的なピアrig-idを検出（インラインの`inferPeerRig`を置き換えます）
-- `git-diff.ts`: `gitDiffSinceLastSync` - 最後に正常にプルされた以降の新しいファイルを検出（同期エンジン）
-- `hash-verify.ts`: `verifyHash` - `in_reply_to`チェーンの整合性を検証するために、本文のハッシュ値を再計算し、比較します（リレーエンジン）
-- `envelope-file.ts`: `validateEnvelopeFile` - ファイルパスを1回の呼び出しで解析し、スキーマ検証を実行します（`thread`、`sync`、`relay`で使用）
+- `envelope.ts` — YAML のフロントマターの解析/生成
+- `schema-validator.ts` — `schemas/bridge-message.schema.json` に対する Ajv を使用した検証
+- `body-hash.ts` — §4.1 で規定された形式に変換されたデータに対する SHA-256 ハッシュ計算 (CRLF→LF、末尾の空白文字の削除、末尾に改行文字が1つだけ、BOM の削除)
+- `status.ts` — ステータスを `▶ active`、`⏸ pending`、`🎯 targeted`、`✅ completed`、`❌ cancelled` のいずれかに分類
+- `rig-id.ts` — 正規化された kebab-case 形式の rig ID の検証と、`normalizeRigId` という入力ヘルパー
+- `git.ts` — サブモジュール、サイズ、OS 固有の問題に対応した Git ラッパー (spawnSync での最大バッファサイズは 50MB)
+- `config.ts` — `.bridge/config.yaml` の読み込み/書き込み (Windows の autocrlf に対応するため、YAML の解析前に改行コードを正規化)
+- `threads.ts` — `listThreads` — 作業ディレクトリにある開いているスレッドを列挙 (status コマンドで使用)
+- `peer-rigs.ts` — `findPeerRigs` — エンベロープの履歴から、正規化されたピア rig ID を検出 (インラインの `inferPeerRig` を置き換える)
+- `git-diff.ts` — `gitDiffSinceLastSync` — 最後に正常に pull された以降に作成されたファイルを表示 (sync エンジンで使用。fast-forward の可否フラグ)
+- `verify-hash.ts` — `verifyHash` — `in_reply_to` チェーンの整合性を確認するために、body_hash を再計算し、比較 (relay エンジンで使用)
+- `validate-file.ts` — `validateEnvelopeFile` — 解析、スキーマ検証、ハッシュ検証をまとめて実行 (thread, sync, relay で共有)
+- `index.ts` — 安定した公開 API のエントリポイント。v1.1 の制御面連携機能の書き込み機能と、それを利用するコンシューマーはここからインポートします。
 
 **フェーズ0の成果物（現時点でも有効）:**
 
@@ -65,13 +66,11 @@ v1.0.0の8つのCLIコマンドと、それらを支えるエンジンヘルパ�
 
 ## インストール
 
-### npm (v1.0.0 以降)
+### npm から入手可能
 
 ```bash
 npm install -g @mcptoolshop/rig-bridge
 ```
-
-> **注意:** 現在、このパッケージはプレリリース版 (`0.0.1-pre-swarm`) です。v1.0.0 は、次期 dogfood swarm の Phase 10 で npm リリースされます。それまでは、ソースコードからインストールしてください（下記参照）。
 
 ### ソースコードから
 
@@ -100,11 +99,11 @@ rig-bridge --version
 
 macOS、Linux、Windows 10 以降。これらすべてが、CI によってプッシュごとにテストされます。
 
-## このソフトウェアの概要
+## 概要
 
 CLI とエンジンライブラリ。異なる環境で動作する複数の Claude インスタンスが、共有の Git リポジトリを介して連携できます。この連携は、型付きエンベローププロトコルを使用し、2026年4月29日に、Mac と Windows GPU 環境で 16 コミットの有機的なセッションで初めて動作確認されました。
 
-v1.0.0 では、8 つのコマンドがすべて実装されます。v1.1 では、コントロールプレーンとの連携が追加され、エンベロープが `swarm-control-plane` の SQLite に書き込まれ、永続的なデータ層として機能します。詳細は [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md) を参照してください。
+v1.0.x では、8つのコマンドがデータ転送機能として提供されます。v1.1 では、制御面との連携機能が追加され、エンベロープが `swarm-control-plane` の SQLite に書き込まれ、永続的なデータとして保存されます (詳細は [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md) を参照)。
 
 このプロトコルは、独自のエンベロープを使用します（トランスポートに依存しません）。Git は、異なる環境間の通信手段です。v1.1 では、コントロールプレーンが永続的な状態の管理を担当します。
 

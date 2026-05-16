@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-05-15
+
+### Fixed
+
+- **npm tarball no longer ships compiled test files.** v1.0.1's tarball included 96 files under `dist/**/*.test.{js,d.ts,js.map,d.ts.map}` (~250 kB of bloat) because `tsconfig.json` compiled the whole `src/` tree, including the 24 test files. Build now uses a separate `tsconfig.build.json` that extends the base config with `**/*.test.ts` + `**/*.spec.ts` excludes. `npm run typecheck` still covers test files (catches typos in test code); `npm run build` produces a lean `dist/` with only production source compiled. Tarball: **955.7 kB → 483.9 kB unpacked** (~50% reduction). Surfaced from the v1.0.1 npm publish log inspection.
+- **README engine-helper filenames corrected.** v1.0.1 README referenced 5 helpers by names that never existed in `src/engine/`: `list-threads.ts` (actual: `threads.ts`), `peers.ts` (actual: `peer-rigs.ts`), `hash-verify.ts` (actual: `verify-hash.ts`), `envelope-file.ts` (actual: `validate-file.ts`). The Phase 7 Wave 2B docs agent invented short-form names that drifted from the Engine agent's actual filenames. Now all 13 engine modules listed by their real on-disk names. `index.ts` (the v1.1 library barrel) added to the list.
+- **README "What it will be" → "What it is".** Tightened future-tense framing to present-tense now that the v1.0.x surface ships on npm.
+- **README Installation section "From npm (v1.0.0+)" → "From npm".** Dropped the version qualifier — the npm install command now works unconditionally.
+
+### Note
+
+README content changed in this release, so all 7 translations were re-run via TranslateGemma 12B (ja / zh / es / fr / hi / it / pt-BR). Translations land in the same release commit per the release-ordering rule.
+
 ## [1.0.1] - 2026-05-15
 
 ### Fixed

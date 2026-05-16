@@ -1,0 +1,17 @@
+// tsconfig.build.json — used by `npm run build` to produce dist/ for the npm tarball.
+// Extends tsconfig.json (which is used by `npm run typecheck` and IDE language services)
+// but excludes test files so dist/ ships lean.
+//
+// Why split: tsconfig.json includes **/*.test.ts so `tsc --noEmit` catches typos in
+// test code. Compiling tests into dist/ would just bloat the published tarball
+// (v1.0.1 shipped 96 test-related files / ~250 kB of bloat — fixed in v1.0.2).
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}

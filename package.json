@@ -1,6 +1,6 @@
 {
   "name": "@mcptoolshop/rig-bridge",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Cross-rig sync tool for paired dev machines — git-native typed-envelope cross-agent handoffs",
   "type": "module",
   "bin": {
@@ -17,7 +17,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "verify": "npm run typecheck && npm run build && npm test"

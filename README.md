@@ -12,15 +12,15 @@
   <a href="https://mcp-tool-shop-org.github.io/rig-bridge/"><img src="https://img.shields.io/badge/landing-page-2563eb" alt="Landing Page" /></a>
 </p>
 
-> **Status:** Phase 7 (Feature Execution Wave 2) landed. v1.0.0 transport surface: **8 of 8 CLI commands implemented** (init / new / send / close / status / thread / sync / relay). The transport surface is complete; v1.1 picks up control-plane integration.
+> **Status:** v1.0.x shipping on npm. **8 of 8 CLI commands** (init / new / send / close / status / thread / sync / relay). Cross-rig drift detection proven through cross-rig E2E (CRLF/LF transport, 3-rig topology). v1.1 picks up control-plane integration.
 
 Cross-rig sync tool for paired dev rigs — git-native typed-envelope cross-agent handoffs.
 
 ## What's here today
 
-**v1.0.0 transport surface complete:**
+**v1.0.x transport surface (complete):**
 
-All 8 v1.0.0 CLI commands plus the engine helpers behind them. v1.0.0 ships the git transport on its own — control-plane integration is deferred to v1.1 (Path B-2; see [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md)).
+All 8 CLI commands plus the engine helpers behind them. v1.0.x ships the git transport on its own — control-plane integration is deferred to v1.1 (Path B-2; see [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md)).
 
 Authoring commands:
 
@@ -39,20 +39,21 @@ Sync + attestation commands:
 - `rig-bridge sync` — fast-forward pull with divergence surfacing (refuses non-FF without `--auto`; surfaces named divergence at the sync boundary per Fossil-style semantics)
 - `rig-bridge relay <type> --thread <id> --in-reply-to <hash>` — human-attested DECISIONS/RESPONSE/ACK turn (requires a `-relay` rig-id suffix + git signing key configured; emits an attestation block with `attested_by` + `attested_at` + ULID `nonce`)
 
-Engine helpers (in `src/engine/`):
+Engine helpers (in `src/engine/`, re-exported from `src/engine/index.ts` as the v1.1 control-plane consumer surface):
 
 - `envelope.ts` — YAML frontmatter parse/render
 - `schema-validator.ts` — Ajv-backed validation against `schemas/bridge-message.schema.json`
-- `body-hash.ts` — SHA-256 over the §4.1-normalized body (BOM strip, CRLF→LF, trailing-whitespace trim, exactly-one terminal newline)
+- `body-hash.ts` — SHA-256 over the §4.1-normalized body (CRLF→LF, trim trailing whitespace, exactly-one terminal newline, BOM strip)
 - `status.ts` — marker → status_class derivation per §4.2 (`▶ active`, `⏸ pending`, `🎯 targeted`, `✅ completed`, `❌ cancelled`)
-- `rig-id.ts` — canonical kebab-case rig id validation at CLI ingress
-- `git.ts` — git wrapper with submodule, size, and OS-junk guards
-- `config.ts` — `.bridge/config.yaml` reader/writer
-- `list-threads.ts` — enumerate open threads from the working tree (for `status`)
-- `peers.ts` — `findPeerRigs` — discover canonical peer rig-ids from envelope history (replaces inline `inferPeerRig`)
-- `git-diff.ts` — `gitDiffSinceLastSync` — surface new files since the last successful pull (sync engine)
-- `hash-verify.ts` — `verifyHash` — recompute and compare body_hash for `in_reply_to` chain integrity (relay engine)
-- `envelope-file.ts` — `validateEnvelopeFile` — parse + schema-validate a file path in one call (shared by `thread`, `sync`, `relay`)
+- `rig-id.ts` — canonical kebab-case rig id validation + `normalizeRigId` ingress helper
+- `git.ts` — git wrapper with submodule, size, and OS-junk guards (50 MB maxBuffer on spawnSync)
+- `config.ts` — `.bridge/config.yaml` reader/writer (line-ending normalize before YAML parse for Windows autocrlf safety)
+- `threads.ts` — `listThreads` — enumerate open threads from the working tree (for `status`)
+- `peer-rigs.ts` — `findPeerRigs` — discover canonical peer rig-ids from envelope history (replaces the inline `inferPeerRig`)
+- `git-diff.ts` — `gitDiffSinceLastSync` — surface new files since the last successful pull (sync engine; fast-forward eligibility flag)
+- `verify-hash.ts` — `verifyHash` — recompute and compare body_hash for `in_reply_to` chain integrity (relay engine)
+- `validate-file.ts` — `validateEnvelopeFile` — parse + schema-validate + verify hash in one call (shared by `thread`, `sync`, `relay`)
+- `index.ts` — stable public-API barrel; v1.1 control-plane writer + downstream consumers import from here
 
 **Phase 0 deliverables (still authoritative):**
 
@@ -65,7 +66,7 @@ Engine helpers (in `src/engine/`):
 
 ## Installation
 
-### From npm (v1.0.0+)
+### From npm
 
 ```bash
 npm install -g @mcptoolshop/rig-bridge
@@ -98,11 +99,11 @@ This should print the version recorded in `package.json`.
 
 macOS, Linux, and Windows 10+ — all three are exercised by CI on every push.
 
-## What it will be
+## What it is
 
 A CLI + engine library that lets two (or more) Claude instances on different rigs coordinate via a shared git repo, using a typed-envelope protocol that survived first contact in a 16-commit organic session between a Mac and a Windows GPU rig on 2026-04-29.
 
-v1.0.0 ships all 8 commands as the transport. v1.1 adds control-plane integration so the envelope writes through to `swarm-control-plane`'s SQLite as the durable truth layer — see [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md).
+v1.0.x ships all 8 commands as the transport. v1.1 will add control-plane integration so the envelope writes through to `swarm-control-plane`'s SQLite as the durable truth layer — see [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md).
 
 The protocol owns its own envelope (transport-agnostic). Git is the cross-rig wire; in v1.1 control-plane becomes the durable state.
 

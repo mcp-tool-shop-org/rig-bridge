@@ -12,15 +12,15 @@
   <a href="https://mcp-tool-shop-org.github.io/rig-bridge/"><img src="https://img.shields.io/badge/landing-page-2563eb" alt="Landing Page" /></a>
 </p>
 
-**Statut :** La phase 7 (deuxième vague d'exécution des fonctionnalités) est terminée. Pour la version 1.0.0, la couche de transport : **8 commandes CLI sur 8 implémentées** (init / new / send / close / status / thread / sync / relay). La couche de transport est complète ; la version 1.1 intégrera le plan de contrôle.
+**Statut :** v1.0.x disponible sur npm. **8 commandes CLI** (init / new / send / close / status / thread / sync / relay). Détection de dérive inter-rig validée par des tests de bout en bout inter-rig (transport CRLF/LF, topologie à 3 rigs). La version v1.1 intégrera le plan de contrôle.
 
 Outil de synchronisation pour les environnements de développement appairés, utilisant une approche native de Git, des enveloppes typées et des transferts inter-agents.
 
 ## Ce qui est disponible aujourd'hui
 
-**Couche de transport complète pour la version 1.0.0 :**
+**Interface de transport v1.0.x (complète) :**
 
-Toutes les 8 commandes CLI de la version 1.0.0, ainsi que les fonctions utilitaires du moteur qui les sous-tendent. La version 1.0.0 inclut le transport Git, tandis que l'intégration du plan de contrôle est reportée à la version 1.1 (chemin B-2 ; voir [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md)).
+Toutes les 8 commandes CLI, ainsi que les fonctions utilitaires du moteur qui les sous-tendent. La version v1.0.x inclut le transport Git de manière autonome. L'intégration du plan de contrôle est reportée à la version v1.1 (chemin B-2 ; voir [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md)).
 
 Commandes de création :
 
@@ -39,20 +39,21 @@ Commandes de synchronisation et d'attestation :
 - `rig-bridge sync` : effectue un "fast-forward pull" et affiche les divergences (refuse les modifications non "fast-forward" sauf avec l'option `--auto` ; affiche les divergences nommées à la limite de la synchronisation, conformément à la sémantique de Fossil).
 - `rig-bridge relay <type> --thread <id> --in-reply-to <hash>` : crée une réponse, une décision ou un accusé de réception attesté par un humain (nécessite un suffixe d'ID d'environnement `-relay` et une clé de signature Git configurée ; génère un bloc d'attestation avec `attested_by`, `attested_at` et un `nonce` ULID).
 
-Fonctions utilitaires du moteur (dans `src/engine/`) :
+Fonctions utilitaires du moteur (situées dans `src/engine/`, réexportées depuis `src/engine/index.ts` en tant qu'interface de consommation du plan de contrôle pour la version v1.1) :
 
-- `envelope.ts` : analyse et rendu du frontmatter YAML.
-- `schema-validator.ts` : validation par rapport au fichier `schemas/bridge-message.schema.json` en utilisant Ajv.
-- `body-hash.ts` : calcul du hachage SHA-256 du corps normalisé selon la norme §4.1 (suppression du BOM, remplacement de CRLF par LF, suppression des espaces blancs de fin, présence exacte d'une seule nouvelle ligne à la fin).
-- `status.ts` : dérivation de la classe de statut à partir du marqueur selon la norme §4.2 (`▶ active`, `⏸ pending`, `🎯 targeted`, `✅ completed`, `❌ cancelled`).
-- `rig-id.ts` : validation de l'ID canonique de l'environnement au format kebab-case lors de l'entrée de la ligne de commande.
-- `git.ts` : wrapper Git avec protections contre les sous-modules, la taille des fichiers et les éléments inutiles du système d'exploitation.
-- `config.ts` : lecteur/rédacteur du fichier `.bridge/config.yaml`.
-- `list-threads.ts` : énumère les threads ouverts à partir de l'arborescence de travail (pour la commande `status`).
-- `peers.ts` : `findPeerRigs` : découvre les ID canoniques des environnements appairés à partir de l'historique des enveloppes (remplace la fonction `inferPeerRig` intégrée).
-- `git-diff.ts` : `gitDiffSinceLastSync` : affiche les nouveaux fichiers depuis le dernier "pull" réussi (moteur de synchronisation).
-- `hash-verify.ts` : `verifyHash` : recalcule et compare le hachage du corps pour vérifier l'intégrité de la chaîne `in_reply_to` (moteur de relais).
-- `envelope-file.ts` : `validateEnvelopeFile` : analyse et valide un fichier par rapport au schéma en une seule opération (utilisé par les commandes `thread`, `sync` et `relay`).
+- `envelope.ts` — Analyse/rendu du préambule YAML.
+- `schema-validator.ts` — Validation basée sur Ajv, utilisant `schemas/bridge-message.schema.json`.
+- `body-hash.ts` — Calcul de la somme de contrôle SHA-256 sur le corps normalisé selon la section 4.1 (CRLF→LF, suppression des espaces blancs à la fin, un seul saut de ligne à la fin, suppression des BOM).
+- `status.ts` — Dérivation de la classe de statut à partir du marqueur, conformément à la section 4.2 (`▶ active`, `⏸ en attente`, `🎯 ciblé`, `✅ terminé`, `❌ annulé`).
+- `rig-id.ts` — Validation de l'ID de rig au format kebab-case canonique + fonction utilitaire d'entrée `normalizeRigId`.
+- `git.ts` — Wrapper Git avec protections contre les sous-modules, la taille et les éléments inutiles du système d'exploitation (tampon maximal de 50 Mo lors de l'utilisation de `spawnSync`).
+- `config.ts` — Lecteur/écrivain de `.bridge/config.yaml` (normalisation des sauts de ligne avant l'analyse YAML pour la compatibilité avec Windows autocrlf).
+- `threads.ts` — `listThreads` — Énumération des threads ouverts à partir de l'arborescence de travail (pour `status`).
+- `peer-rigs.ts` — `findPeerRigs` — Découverte des ID de rig homologues canoniques à partir de l'historique des enveloppes (remplace `inferPeerRig` intégré).
+- `git-diff.ts` — `gitDiffSinceLastSync` — Affichage des nouveaux fichiers depuis la dernière synchronisation réussie (moteur de synchronisation ; indicateur d'éligibilité à la mise à jour rapide).
+- `verify-hash.ts` — `verifyHash` — Recalcul et comparaison de la somme de contrôle du corps pour l'intégrité de la chaîne `in_reply_to` (moteur de relais).
+- `validate-file.ts` — `validateEnvelopeFile` — Analyse + validation selon le schéma + vérification de la somme de contrôle en un seul appel (utilisé par `thread`, `sync`, `relay`).
+- `index.ts` — Module d'API publique stable ; écriture du plan de contrôle pour la version v1.1 + les consommateurs suivants importent à partir de ce module.
 
 **Livrables de la phase 0 (toujours pertinents) :**
 
@@ -65,13 +66,11 @@ Fonctions utilitaires du moteur (dans `src/engine/`) :
 
 ## Installation
 
-### Depuis npm (v1.0.0+)
+### Disponible sur npm
 
 ```bash
 npm install -g @mcptoolshop/rig-bridge
 ```
-
-> **Note :** Le paquet est actuellement en version de pré-sortie (`0.0.1-pre-swarm`). La version v1.0.0 sera publiée lors de la Phase 10 du prochain "dogfood swarm". En attendant, installez à partir du code source (voir ci-dessous).
 
 ### Depuis le code source
 
@@ -100,11 +99,11 @@ Cela devrait afficher la version enregistrée dans `package.json`.
 
 macOS, Linux et Windows 10+ — les trois sont testés par l'intégration continue à chaque modification.
 
-## Ce que cela deviendra
+## Qu'est-ce que c'est
 
 Une bibliothèque et une interface en ligne de commande qui permettent à deux (ou plusieurs) instances de Claude sur des machines différentes de se coordonner via un dépôt Git partagé, en utilisant un protocole d'enveloppe typé qui a fait ses preuves lors d'une session organique de 16 commits entre un Mac et une station de travail Windows équipée d'un GPU, le 29 avril 2026.
 
-La version v1.0.0 inclut les 8 commandes en tant que fonctionnalité de base. La version v1.1 ajoute l'intégration du plan de contrôle, permettant ainsi à l'enveloppe d'écrire directement dans la base de données SQLite de `swarm-control-plane`, qui sert de couche de vérité durable — voir [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md).
+La version v1.0.x inclut les 8 commandes en tant qu'interface de transport. La version v1.1 ajoutera l'intégration du plan de contrôle, permettant ainsi l'écriture des enveloppes vers SQLite de `swarm-control-plane` en tant que couche de vérité durable. (voir [docs/v1.1-roadmap.md](docs/v1.1-roadmap.md)).
 
 Le protocole utilise sa propre enveloppe (indépendante du protocole de transport). Git est le lien entre les différentes machines ; dans la version v1.1, le plan de contrôle devient l'état durable.
 
