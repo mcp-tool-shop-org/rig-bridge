@@ -44,7 +44,9 @@ jobs:
         run: npm ci
 
       - name: Audit dependencies
-        run: npm audit --audit-level=critical
+        # Matches ci.yml: `high`, not `critical`. The release gate must not be looser
+        # than the gate every PR already passed.
+        run: npm audit --audit-level=high
 
       - name: Verify (typecheck + build + tests)
         run: npm run verify
