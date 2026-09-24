@@ -1,0 +1,235 @@
+{
+  "authored": [
+    ".github/",
+    "docs/",
+    "root",
+    "schemas/",
+    "site/"
+  ],
+  "breaks": [
+    {
+      "doors": 3,
+      "importedBy": [],
+      "importedByTests": [],
+      "kind": "part",
+      "name": "src",
+      "partLabel": "src"
+    }
+  ],
+  "changes": {
+    "first": true
+  },
+  "changesTogether": [],
+  "changesTogetherNote": [
+    "Window: 180 days; a pair counts from 3 shared commits, since the window holds fewer than 30 qualifying commits."
+  ],
+  "changesTogetherWithTests": 0,
+  "commit": "e91f65b5c12bd070342abdb298b9434c27d4a9b4",
+  "defaultBranch": "main",
+  "derived": "6 parts, mostly TypeScript (48 files). Work enters through 4 doors; the busiest is Deploy site to GitHub Pages, which reaches 1 part. It publishes to npm. People run rig-bridge.",
+  "doors": [
+    {
+      "checks": [],
+      "checksCount": 0,
+      "file": ".github/workflows/pages.yml",
+      "id": ".github/workflows/pages.yml",
+      "landings": [],
+      "name": "Deploy site to GitHub Pages",
+      "pushes": false,
+      "reach": [
+        {
+          "boundary": "site",
+          "depth": 0,
+          "files": 3
+        }
+      ],
+      "runs": [
+        "site/astro.config.mjs",
+        "site/src/"
+      ],
+      "runsCount": 2,
+      "sends": [
+        "deploys the site"
+      ],
+      "stages": [],
+      "triggers": [
+        "on a push to main touching 2 paths",
+        "or by hand"
+      ]
+    },
+    {
+      "checks": [
+        "src/"
+      ],
+      "checksCount": 1,
+      "file": ".github/workflows/release.yml",
+      "id": ".github/workflows/release.yml",
+      "landings": [],
+      "name": "Release",
+      "pushes": false,
+      "reach": [
+        {
+          "boundary": "src",
+          "depth": 0,
+          "files": 46
+        }
+      ],
+      "runs": [
+        "src/cli.ts",
+        "src/cli-e2e.test.ts",
+        "src/cli.test.ts",
+        "src/commands/close.test.ts",
+        "src/commands/init.test.ts",
+        "src/commands/new.test.ts",
+        "src/commands/relay.test.ts",
+        "src/commands/send.test.ts",
+        "src/commands/status.test.ts",
+        "src/commands/sync.test.ts",
+        "src/commands/thread.test.ts",
+        "src/cross-rig.test.ts",
+        "src/engine/body-hash.test.ts",
+        "src/engine/config.test.ts",
+        "src/engine/envelope.test.ts",
+        "src/engine/git-diff.test.ts",
+        "src/engine/git.test.ts",
+        "src/engine/peer-rigs.test.ts",
+        "src/engine/rig-id.test.ts",
+        "src/engine/schema-validator.test.ts",
+        "src/engine/status.test.ts",
+        "src/engine/threads.test.ts",
+        "src/engine/validate-file.test.ts",
+        "src/engine/verify-hash.test.ts",
+        "src/smoke.test.ts"
+      ],
+      "runsCount": 25,
+      "sends": [
+        "publishes to npm",
+        "creates a GitHub release"
+      ],
+      "stages": [],
+      "triggers": [
+        "when a tag matching `v[0-9]+.[0-9]+.[0-9]+` or `v[0-9]+.[0-9]+.[0-9]+-*` is pushed"
+      ]
+    },
+    {
+      "checks": [
+        "src/"
+      ],
+      "checksCount": 1,
+      "file": ".github/workflows/ci.yml",
+      "id": ".github/workflows/ci.yml",
+      "landings": [],
+      "name": "ci",
+      "pushes": false,
+      "reach": [
+        {
+          "boundary": "src",
+          "depth": 0,
+          "files": 46
+        }
+      ],
+      "runs": [
+        "src/cli.ts",
+        "src/cli-e2e.test.ts",
+        "src/cli.test.ts",
+        "src/commands/close.test.ts",
+        "src/commands/init.test.ts",
+        "src/commands/new.test.ts",
+        "src/commands/relay.test.ts",
+        "src/commands/send.test.ts",
+        "src/commands/status.test.ts",
+        "src/commands/sync.test.ts",
+        "src/commands/thread.test.ts",
+        "src/cross-rig.test.ts",
+        "src/engine/body-hash.test.ts",
+        "src/engine/config.test.ts",
+        "src/engine/envelope.test.ts",
+        "src/engine/git-diff.test.ts",
+        "src/engine/git.test.ts",
+        "src/engine/peer-rigs.test.ts",
+        "src/engine/rig-id.test.ts",
+        "src/engine/schema-validator.test.ts",
+        "src/engine/status.test.ts",
+        "src/engine/threads.test.ts",
+        "src/engine/validate-file.test.ts",
+        "src/engine/verify-hash.test.ts",
+        "src/smoke.test.ts"
+      ],
+      "runsCount": 25,
+      "sends": [],
+      "stages": [],
+      "triggers": [
+        "on a pull request touching 11 paths",
+        "on a push touching 11 paths",
+        "or by hand"
+      ]
+    },
+    {
+      "checks": [],
+      "checksCount": 0,
+      "file": "package.json",
+      "id": "package.json#rig-bridge",
+      "kind": "command",
+      "landings": [],
+      "name": "rig-bridge",
+      "pushes": false,
+      "reach": [
+        {
+          "boundary": "src",
+          "depth": 0,
+          "files": 20
+        }
+      ],
+      "runs": [
+        "src/cli.ts"
+      ],
+      "runsCount": 1,
+      "sends": [],
+      "stages": [],
+      "triggers": []
+    }
+  ],
+  "duplicates": [],
+  "duplicatesLead": null,
+  "duplicatesNote": [],
+  "edges": [],
+  "generated": [],
+  "generatedAt": "2026-09-24T02:05:33.274Z",
+  "limits": [
+    "1 file uses syntax the parser cannot read (src/engine/envelope.test.ts), so what it imports is not known: a NUL character inside a string (1).",
+    "3 writes and 32 reads use paths built at run time and are not named here.",
+    "4 reads go to the directory the command is run in, the home directory or a path its caller passes, not to this repository.",
+    "39 commands are built at run time and not followed, 36 of them in tests.",
+    "Statistics confidence is low: fewer than 30 qualifying commits in the window, and fewer than 20 source files reach 10 revisions."
+  ],
+  "mainDoor": ".github/workflows/pages.yml",
+  "partLabels": {
+    ".github": ".github",
+    "docs": "docs",
+    "root": "the repository root",
+    "schemas": "schemas",
+    "site": "the site",
+    "src": "src"
+  },
+  "parts": 6,
+  "readers": [],
+  "repo": "mcp-tool-shop-org/rig-bridge",
+  "sequences": [],
+  "startDoor": ".github/workflows/ci.yml",
+  "startHere": [
+    ".github/workflows/ci.yml",
+    "src/cli.ts"
+  ],
+  "summary": null,
+  "summaryFrom": null,
+  "testFiles": 24,
+  "testedBy": {
+    "src": 24
+  },
+  "unnamedWrites": 3,
+  "unread": [],
+  "unreadNote": [],
+  "untested": [],
+  "untestedNote": [],
+  "written": 0
+}
