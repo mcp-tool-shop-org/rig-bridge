@@ -1,0 +1,596 @@
+{
+  "authorship": {
+    "parts": [],
+    "places": []
+  },
+  "boundaries": [
+    {
+      "breakage": {
+        "coChangesOnly": [],
+        "collapsed": false,
+        "confidence": "low",
+        "importsAndCoChanges": [],
+        "importsOnly": []
+      },
+      "cohesion": null,
+      "cohesionDropped": false,
+      "confidence": "low",
+      "highWater": null,
+      "name": ".github",
+      "qualifyingSourceCommits": 0,
+      "rebaseline": null
+    },
+    {
+      "breakage": {
+        "coChangesOnly": [],
+        "collapsed": false,
+        "confidence": "low",
+        "importsAndCoChanges": [],
+        "importsOnly": []
+      },
+      "cohesion": null,
+      "cohesionDropped": false,
+      "confidence": "low",
+      "highWater": null,
+      "name": "docs",
+      "qualifyingSourceCommits": 0,
+      "rebaseline": null
+    },
+    {
+      "breakage": {
+        "coChangesOnly": [],
+        "collapsed": false,
+        "confidence": "low",
+        "importsAndCoChanges": [],
+        "importsOnly": []
+      },
+      "cohesion": null,
+      "cohesionDropped": false,
+      "confidence": "low",
+      "highWater": null,
+      "name": "root",
+      "qualifyingSourceCommits": 0,
+      "rebaseline": null
+    },
+    {
+      "breakage": {
+        "coChangesOnly": [],
+        "collapsed": false,
+        "confidence": "low",
+        "importsAndCoChanges": [],
+        "importsOnly": []
+      },
+      "cohesion": null,
+      "cohesionDropped": false,
+      "confidence": "low",
+      "highWater": null,
+      "name": "schemas",
+      "qualifyingSourceCommits": 0,
+      "rebaseline": null
+    },
+    {
+      "breakage": {
+        "coChangesOnly": [],
+        "collapsed": false,
+        "confidence": "low",
+        "importsAndCoChanges": [],
+        "importsOnly": []
+      },
+      "cohesion": null,
+      "cohesionDropped": false,
+      "confidence": "low",
+      "highWater": null,
+      "name": "site",
+      "qualifyingSourceCommits": 1,
+      "rebaseline": null
+    },
+    {
+      "breakage": {
+        "coChangesOnly": [],
+        "collapsed": false,
+        "confidence": "low",
+        "importsAndCoChanges": [],
+        "importsOnly": []
+      },
+      "cohesion": null,
+      "cohesionDropped": false,
+      "confidence": "low",
+      "highWater": null,
+      "name": "src",
+      "qualifyingSourceCommits": 4,
+      "rebaseline": null
+    }
+  ],
+  "churn": {
+    "definition": "commits is how many commits in the window touch the file, including merges and commits dropped from coupling. lines is added plus deleted in those commits.",
+    "files": [
+      {
+        "commits": 2,
+        "lines": 44,
+        "path": ".github/dependabot.yml"
+      },
+      {
+        "commits": 10,
+        "lines": 124,
+        "path": ".github/workflows/ci.yml"
+      },
+      {
+        "commits": 3,
+        "lines": 64,
+        "path": ".github/workflows/pages.yml"
+      },
+      {
+        "commits": 4,
+        "lines": 85,
+        "path": ".github/workflows/release.yml"
+      },
+      {
+        "commits": 2,
+        "lines": 22,
+        "path": ".gitignore"
+      },
+      {
+        "commits": 2,
+        "lines": 84,
+        "path": "ARCHITECTURE.md"
+      },
+      {
+        "commits": 5,
+        "lines": 105,
+        "path": "CHANGELOG.md"
+      },
+      {
+        "commits": 1,
+        "lines": 21,
+        "path": "LICENSE"
+      },
+      {
+        "commits": 2,
+        "lines": 223,
+        "path": "README.es.md"
+      },
+      {
+        "commits": 2,
+        "lines": 199,
+        "path": "README.fr.md"
+      },
+      {
+        "commits": 2,
+        "lines": 249,
+        "path": "README.hi.md"
+      },
+      {
+        "commits": 2,
+        "lines": 199,
+        "path": "README.it.md"
+      },
+      {
+        "commits": 2,
+        "lines": 199,
+        "path": "README.ja.md"
+      },
+      {
+        "commits": 5,
+        "lines": 233,
+        "path": "README.md"
+      },
+      {
+        "commits": 2,
+        "lines": 199,
+        "path": "README.pt-BR.md"
+      },
+      {
+        "commits": 2,
+        "lines": 265,
+        "path": "README.zh.md"
+      },
+      {
+        "commits": 1,
+        "lines": 49,
+        "path": "SCORECARD.md"
+      },
+      {
+        "commits": 2,
+        "lines": 58,
+        "path": "SECURITY.md"
+      },
+      {
+        "commits": 2,
+        "lines": 151,
+        "path": "SHIP_GATE.md"
+      },
+      {
+        "commits": 1,
+        "lines": 125,
+        "path": "docs/cli-contract.md"
+      },
+      {
+        "commits": 4,
+        "lines": 398,
+        "path": "docs/control-plane-integration.md"
+      },
+      {
+        "commits": 4,
+        "lines": 352,
+        "path": "docs/envelope-spec.md"
+      },
+      {
+        "commits": 2,
+        "lines": 161,
+        "path": "docs/v1.1-roadmap.md"
+      },
+      {
+        "commits": 4,
+        "lines": 3209,
+        "path": "package-lock.json"
+      },
+      {
+        "commits": 7,
+        "lines": 81,
+        "path": "package.json"
+      },
+      {
+        "commits": 4,
+        "lines": 144,
+        "path": "schemas/bridge-message.schema.json"
+      },
+      {
+        "commits": 2,
+        "lines": 35,
+        "path": "site/astro.config.mjs"
+      },
+      {
+        "commits": 2,
+        "lines": 13872,
+        "path": "site/package-lock.json"
+      },
+      {
+        "commits": 2,
+        "lines": 24,
+        "path": "site/package.json"
+      },
+      {
+        "commits": 1,
+        "lines": 7,
+        "path": "site/src/content.config.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 70,
+        "path": "site/src/content/docs/handbook/architecture.md"
+      },
+      {
+        "commits": 1,
+        "lines": 119,
+        "path": "site/src/content/docs/handbook/getting-started.md"
+      },
+      {
+        "commits": 1,
+        "lines": 31,
+        "path": "site/src/content/docs/handbook/index.md"
+      },
+      {
+        "commits": 1,
+        "lines": 109,
+        "path": "site/src/content/docs/handbook/reference.md"
+      },
+      {
+        "commits": 1,
+        "lines": 137,
+        "path": "site/src/content/docs/handbook/usage.md"
+      },
+      {
+        "commits": 1,
+        "lines": 33,
+        "path": "site/src/pages/index.astro"
+      },
+      {
+        "commits": 1,
+        "lines": 102,
+        "path": "site/src/site-config.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 3,
+        "path": "site/src/styles/global.css"
+      },
+      {
+        "commits": 1,
+        "lines": 5,
+        "path": "site/src/styles/starlight-custom.css"
+      },
+      {
+        "commits": 1,
+        "lines": 5,
+        "path": "site/tsconfig.json"
+      },
+      {
+        "commits": 2,
+        "lines": 370,
+        "path": "src/cli-e2e.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 300,
+        "path": "src/cli.test.ts"
+      },
+      {
+        "commits": 3,
+        "lines": 626,
+        "path": "src/cli.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 199,
+        "path": "src/commands/close.test.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 323,
+        "path": "src/commands/close.ts"
+      },
+      {
+        "commits": 3,
+        "lines": 204,
+        "path": "src/commands/init.test.ts"
+      },
+      {
+        "commits": 3,
+        "lines": 192,
+        "path": "src/commands/init.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 128,
+        "path": "src/commands/new.test.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 105,
+        "path": "src/commands/new.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 481,
+        "path": "src/commands/relay.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 565,
+        "path": "src/commands/relay.ts"
+      },
+      {
+        "commits": 3,
+        "lines": 310,
+        "path": "src/commands/send.test.ts"
+      },
+      {
+        "commits": 3,
+        "lines": 331,
+        "path": "src/commands/send.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 347,
+        "path": "src/commands/status.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 334,
+        "path": "src/commands/status.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 392,
+        "path": "src/commands/sync.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 232,
+        "path": "src/commands/sync.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 270,
+        "path": "src/commands/thread.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 309,
+        "path": "src/commands/thread.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 483,
+        "path": "src/cross-rig.test.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 168,
+        "path": "src/engine/body-hash.test.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 50,
+        "path": "src/engine/body-hash.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 95,
+        "path": "src/engine/config.test.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 111,
+        "path": "src/engine/config.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 94,
+        "path": "src/engine/envelope.test.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 123,
+        "path": "src/engine/envelope.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 338,
+        "path": "src/engine/git-diff.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 287,
+        "path": "src/engine/git-diff.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 382,
+        "path": "src/engine/git.test.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 231,
+        "path": "src/engine/git.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 95,
+        "path": "src/engine/index.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 409,
+        "path": "src/engine/peer-rigs.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 136,
+        "path": "src/engine/peer-rigs.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 116,
+        "path": "src/engine/rig-id.test.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 76,
+        "path": "src/engine/rig-id.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 189,
+        "path": "src/engine/schema-validator.test.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 84,
+        "path": "src/engine/schema-validator.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 114,
+        "path": "src/engine/status.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 69,
+        "path": "src/engine/status.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 490,
+        "path": "src/engine/threads.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 221,
+        "path": "src/engine/threads.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 332,
+        "path": "src/engine/validate-file.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 188,
+        "path": "src/engine/validate-file.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 252,
+        "path": "src/engine/verify-hash.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 54,
+        "path": "src/engine/verify-hash.ts"
+      },
+      {
+        "commits": 2,
+        "lines": 233,
+        "path": "src/smoke.test.ts"
+      },
+      {
+        "commits": 1,
+        "lines": 17,
+        "path": "tsconfig.build.json"
+      },
+      {
+        "commits": 1,
+        "lines": 24,
+        "path": "tsconfig.json"
+      }
+    ]
+  },
+  "confidence": {
+    "level": "low",
+    "reason": "fewer than 30 qualifying commits in the window, and fewer than 20 source files reach 10 revisions"
+  },
+  "generatedAt": "2026-09-24T02:05:33.274Z",
+  "generatedFrom": {
+    "commit": "e91f65b5c12bd070342abdb298b9434c27d4a9b4"
+  },
+  "pairs": [],
+  "parameters": {
+    "appliedChangesetLimit": 22,
+    "changeset": 50,
+    "changesetFraction": 0.25,
+    "cohesionDrop": 0.2,
+    "couplingPopulation": "source",
+    "fallenShared": 3,
+    "floor": "fallen",
+    "floorHeld": false,
+    "floorTrigger": "both",
+    "headDate": "2026-09-17T20:16:55-07:00",
+    "inScopeFiles": 88,
+    "pinnedStart": null,
+    "priorFloor": null,
+    "qualifyingCommits": 18,
+    "qualifyingMinimum": 30,
+    "revisions": 5,
+    "shared": 10,
+    "sharedFloorUsed": 3,
+    "since": "2026-03-22T03:16:55.000Z",
+    "sourceExtensions": [
+      ".js",
+      ".mjs",
+      ".cjs",
+      ".jsx",
+      ".ts",
+      ".tsx",
+      ".mts",
+      ".cts",
+      ".py"
+    ],
+    "sourceFileReach": 20,
+    "sourceFileRise": 25,
+    "sourceFilesReachingStrongFloor": 0,
+    "strength": 0.5,
+    "windowDays": 180
+  },
+  "strengthDefinition": "strength is the shared qualifying commits divided by either. either is the number of qualifying commits that touch either file."
+}
