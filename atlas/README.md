@@ -1,38 +1,81 @@
 # rig-bridge: how it works
 
-Mapped at 2026-09-24 from commit e91f65b.
+Mapped at 2026-09-30 from commit 204828b by Atlas 1.24.0.
 
 ## What this is
 
-6 parts, mostly TypeScript (48 files). Work enters through 4 doors; the busiest is Deploy site to GitHub Pages, which reaches 1 part. It publishes to npm. People run rig-bridge.
+6 parts, mostly TypeScript (48 files), CSS (2), Astro (1) and JavaScript (1). Work enters through 4 doors; ci, Deploy site to GitHub Pages, Release and rig-bridge each reach 1 part, and ci is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run rig-bridge.
 
-## What changed since the last map
+## What changed since 2026-09-24 (e91f65b)
 
-This is the first map.
+Nothing structural changed since 2026-09-24; 87 files changed content.
 
 ## What comes in
 
-1. **Deploy site to GitHub Pages.** On a push to main touching 2 paths; or by hand. Runs site/astro.config.mjs and site/src/.
-2. **Release.** When a tag matching `v[0-9]+.[0-9]+.[0-9]+` or `v[0-9]+.[0-9]+.[0-9]+-*` is pushed. Runs src/cli.ts, src/cli-e2e.test.ts, src/cli.test.ts and 22 more; checks src/.
-3. **ci.** On a pull request touching 11 paths; on a push touching 11 paths; or by hand. Runs src/cli.ts, src/cli-e2e.test.ts, src/cli.test.ts and 22 more; checks src/.
+1. **ci.** On a pull request touching 11 paths; on a push touching 11 paths; or by hand. Runs src/cli.ts, src/cli-e2e.test.ts, src/cli.test.ts and 22 more; builds src/.
+2. **Deploy site to GitHub Pages.** On a push to main touching 2 paths; or by hand. Runs site/astro.config.mjs and site/src/.
+3. **Release.** When a tag matching `v[0-9]+.[0-9]+.[0-9]+` or `v[0-9]+.[0-9]+.[0-9]+-*` is pushed. Runs src/cli.ts, src/cli-e2e.test.ts, src/cli.test.ts and 22 more; builds src/.
 4. **rig-bridge** (a command people run). Runs src/cli.ts.
 
-## What happens through Deploy site to GitHub Pages
+## What happens through ci
 
-1. The workflow runs site/astro.config.mjs and site/src/ in the site.
-2. It deploys the site.
+1. The workflow runs 25 files in src; it builds src/ in src.
+   1. Inside src/cli.ts, `main` does, in order:
+      1. `runInit`
+      2. `runNew`
+      3. `runSend`
+      4. `runClose`
+      5. `runStatus`
+      6. `runThread`
+      7. `runSync`
+      8. `runRelay`
+   2. **`runInit`** runs, in order: `normalizeRigId`, `validateRigId`, `isGitRepo`, `repoRoot`, `writeConfig` and `configPath`.
+   3. **`runNew`** runs, in order: `repoRoot`, `readConfig` and `renderEnvelope`.
+   4. **`runSend`** runs, in order:
+      1. `validateRigId`
+      2. `repoRoot`
+      3. `readConfig`
+      4. `markerToStatusClass`
+      5. `bodyHash`
+      6. `validateFrontmatter`
+      7. `renderEnvelope`
+      8. `safeCommit`
+      9. `safePush`
+   5. **`runClose`** runs, in order:
+      1. `repoRoot`
+      2. `readConfig`
+      3. `markerToStatusClass`
+      4. `findPeerRigs`
+      5. `bodyHash`
+      6. `validateFrontmatter`
+      7. `renderEnvelope`
+      8. `safeCommit`
+      9. `safePush`
+   6. **`runRelay`** runs, in order:
+      1. `repoRoot`
+      2. `readConfig`
+      3. `runGit`
+      4. `validateRigId`
+      5. `parseEnvelope`
+      6. `normalizeRigId`
+      7. `validateRigId`
+      8. `bodyHash`
+      9. `validateFrontmatter`
+      10. `renderEnvelope`
+      11. `runGit`
+2. It runs git.
 
 ## Who reads the results
 
-Deploy site to GitHub Pages writes nothing this map can see.
+ci writes nothing this map can see.
 
 ## The other doors
 
-**Release** runs src/cli.ts, src/cli-e2e.test.ts, src/cli.test.ts and 22 more, checks src/, publishes to npm, and creates a GitHub release.
+**Deploy site to GitHub Pages** runs site/astro.config.mjs and site/src/, and deploys the site.
 
-**ci** runs src/cli.ts, src/cli-e2e.test.ts, src/cli.test.ts and 22 more, and checks src/.
+**Release** runs src/cli.ts, src/cli-e2e.test.ts, src/cli.test.ts and 22 more, builds src/, runs git, publishes to npm, and creates a GitHub release.
 
-**rig-bridge** (a command people run) runs src/cli.ts.
+**rig-bridge** (a command people run) runs src/cli.ts and runs git.
 
 ## What breaks what
 
@@ -62,20 +105,18 @@ Nothing in this repository writes to a tracked place this map can see.
 
 ## Hand-authored
 
-People write .github/, docs/, the repository root, schemas/ and site/; 3 writes with paths built at run time may land here.
+People write .github/, docs/, the repository root, schemas/ and site/. Nothing in this repository writes to them.
 
 ## Where to start
 
-.github/workflows/ci.yml → src/cli.ts
+.github/workflows/ci.yml → src/cli.ts → src/commands/init.ts → src/commands/new.ts → src/commands/send.ts → src/commands/close.ts → src/commands/status.ts → src/commands/thread.ts
 
 Read those in order to follow one pull request end to end.
 
 ## What this map cannot see
 
-- 1 file uses syntax the parser cannot read (src/engine/envelope.test.ts), so what it imports is not known: a NUL character inside a string (1).
-- 3 writes and 32 reads use paths built at run time and are not named here.
-- 4 reads go to the directory the command is run in, the home directory or a path its caller passes, not to this repository.
-- 39 commands are built at run time and not followed, 36 of them in tests.
-- Statistics confidence is low: fewer than 30 qualifying commits in the window, and fewer than 20 source files reach 10 revisions.
+- 9 writes and 46 reads go to a path their caller passes, not to this repository.
+- 2 commands are built at run time and not followed.
+- Statistics confidence is low: fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions.
 
 Regenerate with `npx --yes @dogfood-lab/atlas map`.
