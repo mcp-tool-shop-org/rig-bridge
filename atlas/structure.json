@@ -13,7 +13,7 @@
           "path": ".github/dependabot.yml"
         },
         {
-          "hash": "590707a9bab4b9b7c4f1a897cdd4800d16d18ae1c2b81beaa226054a6c3202da",
+          "hash": "60e60b93c1340019ad28a701262d064452c7124f7359302ea67fc26eb999c525",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -21,7 +21,7 @@
           "path": ".github/workflows/pages.yml"
         },
         {
-          "hash": "167396f6e5b9f51a5ff81878aeda7da5fd63e4fda5df0a56e8af3c5b71144e73",
+          "hash": "442f1b69d7f6e3e83c514d130beee55a51549cc4f27b529f158a9416d551ef90",
           "path": ".github/workflows/release.yml"
         }
       ],
@@ -2584,7 +2584,7 @@
           "programs": [
             "npm"
           ],
-          "step": "4"
+          "step": "3"
         },
         {
           "dir": "",
@@ -2600,7 +2600,7 @@
           "programs": [
             "npm"
           ],
-          "step": "7"
+          "step": "6"
         },
         {
           "dir": "",
@@ -2608,7 +2608,7 @@
           "programs": [
             "npm"
           ],
-          "step": "8"
+          "step": "7"
         },
         {
           "dir": "",
@@ -2644,38 +2644,6 @@
       ],
       "elsewhere": [],
       "file": ".github/workflows/ci.yml",
-      "findings": [
-        {
-          "job": "build-and-test",
-          "lines": [
-            {
-              "file": ".github/workflows/ci.yml",
-              "line": 52
-            },
-            {
-              "file": ".github/workflows/ci.yml",
-              "line": 84
-            },
-            {
-              "file": "package-lock.json",
-              "line": 1153
-            }
-          ],
-          "package": "vitest",
-          "pinnedBy": {
-            "step": "3",
-            "version": "20.11.0"
-          },
-          "pins": [
-            "20.11.0"
-          ],
-          "requires": "^22.12.0 || ^24.0.0 || >=26.0.0",
-          "rule": "D1",
-          "step": "Tests",
-          "tool": "vitest run",
-          "version": "5.0.0"
-        }
-      ],
       "jobs": [
         {
           "basis": "declared",
@@ -2700,20 +2668,9 @@
                   "range": ">=22.0.0 <23.0.0-0"
                 }
               ],
-              "step": "Set up Node for the Atlas check",
+              "step": "1",
               "uses": "actions/setup-node",
               "version": "22"
-            },
-            {
-              "ranges": [
-                {
-                  "from": "20.11.0",
-                  "range": "20.11.0"
-                }
-              ],
-              "step": "3",
-              "uses": "actions/setup-node",
-              "version": "20.11.0"
             }
           ]
         }
@@ -3203,38 +3160,6 @@
       ],
       "elsewhere": [],
       "file": ".github/workflows/release.yml",
-      "findings": [
-        {
-          "job": "release",
-          "lines": [
-            {
-              "file": ".github/workflows/release.yml",
-              "line": 27
-            },
-            {
-              "file": ".github/workflows/release.yml",
-              "line": 51
-            },
-            {
-              "file": "package-lock.json",
-              "line": 1153
-            }
-          ],
-          "package": "vitest",
-          "pinnedBy": {
-            "step": "Set up Node",
-            "version": "20.11.0"
-          },
-          "pins": [
-            "20.11.0"
-          ],
-          "requires": "^22.12.0 || ^24.0.0 || >=26.0.0",
-          "rule": "D1",
-          "step": "Verify (typecheck + build + tests)",
-          "tool": "vitest run",
-          "version": "5.0.0"
-        }
-      ],
       "jobs": [
         {
           "basis": "declared",
@@ -3255,13 +3180,13 @@
             {
               "ranges": [
                 {
-                  "from": "20.11.0",
-                  "range": "20.11.0"
+                  "from": "22",
+                  "range": ">=22.0.0 <23.0.0-0"
                 }
               ],
               "step": "Set up Node",
               "uses": "actions/setup-node",
-              "version": "20.11.0"
+              "version": "22"
             }
           ]
         }
@@ -3579,7 +3504,7 @@
   "edges": [],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "204828b76b942cb4bc89f2baccfe96564090f241",
+    "commit": "dfb7dd05662767b92cf6b3d320dc0234430a18ed",
     "tracked": 88
   },
   "landings": [
