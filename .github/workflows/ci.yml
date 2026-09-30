@@ -40,19 +40,12 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # Atlas requires Node 22 or later, and this job tests on Node 20.11.0, so
-      # the check gets its own Node 22 first; the setup-node step after it puts
-      # 20.11.0 back in front for everything the job tests.
-      - name: Set up Node for the Atlas check
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22
-      - name: Atlas check
-        run: npx --yes @dogfood-lab/atlas@1.24.0 check
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "20.11.0"
+          node-version: 22
           cache: "npm"
+      - name: Atlas check
+        run: npx --yes @dogfood-lab/atlas@1.24.0 check
       - run: npm ci
       - name: Audit dependencies
         # On a push to main: the absolute audit, exactly as before.
@@ -100,6 +93,6 @@ jobs:
             HIGH=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.high // 0')
             MOD=$(echo "$AUDIT_JSON" | jq -r '.metadata.vulnerabilities.moderate // 0')
             echo "- Audit: ${CRIT} critical / ${HIGH} high / ${MOD} moderate"
-            echo "- Node: ${{ matrix.node-version || '20.11.0' }}"
+            echo "- Node: ${{ matrix.node-version || '22' }}"
             echo "- OS: ${{ runner.os }}"
           } >> $GITHUB_STEP_SUMMARY
