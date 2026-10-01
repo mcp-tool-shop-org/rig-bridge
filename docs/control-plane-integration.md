@@ -333,4 +333,4 @@ Explicitly out of scope for v1.0.0 (echoes ARCHITECTURE.md §"Out of scope" and 
 - `/Volumes/T9-Shared/AI/dogfood-lab/testing-os/packages/dogfood-swarm/db/schema.js` — control-plane schema source of truth
 - `/Volumes/T9-Shared/AI/dogfood-lab/testing-os/packages/dogfood-swarm/lib/domains.js` — bridge-domain (single-machine) ownership class, semantically distinct from rig-bridge transport
 - `/Volumes/T9-Shared/AI/dogfood-lab/testing-os/swarms/PROTOCOL.md` — pre-wave hook risk-2 mitigation
-- `/Users/michaelfrilot/bridge/{swarm-rig-bridge-001, star-freight-canon-001, state-2026-04-29}/` — 14-commit corpus, observed envelope shapes
+- `/Users/<user>/bridge/{swarm-rig-bridge-001, star-freight-canon-001, state-2026-04-29}/` — 14-commit corpus, observed envelope shapes
