@@ -19,30 +19,37 @@
   "changes": {
     "fileCounts": {
       "added": 0,
-      "changed": 2,
+      "changed": 3,
       "moved": 0,
-      "parts": 1,
+      "parts": 3,
       "removed": 0
     },
     "items": [
       {
+        "kind": "door",
+        "sentence": "ci's pull request trigger no longer names `.github/workflows/**`, `atlas/**`, `docs/**`, `package-lock.json`, `package.json`, `schemas/**`, `site/astro.config.mjs`, `site/package-lock.json`, `site/package.json`, `src/**` and `tsconfig.json`.",
+        "subjects": [
+          ".github/workflows/ci.yml"
+        ]
+      },
+      {
         "kind": "counts",
-        "sentence": "Nothing structural changed since 2026-09-30; 2 files changed content.",
+        "sentence": "3 files changed content, across 3 parts.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "204828b76b942cb4bc89f2baccfe96564090f241",
-      "generatedAt": "2026-09-30T20:12:20.596Z"
+      "commit": "dfb7dd05662767b92cf6b3d320dc0234430a18ed",
+      "generatedAt": "2026-09-30T22:06:55.364Z"
     },
-    "unchanged": true
+    "unchanged": false
   },
   "changesTogether": [],
   "changesTogetherNote": [
     "Window: 180 days; a pair counts from 3 shared commits, since the window holds fewer than 30 qualifying commits."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "dfb7dd05662767b92cf6b3d320dc0234430a18ed",
+  "commit": "c27c7b040bbf7e64be83f1f14a44de70d08da6cd",
   "defaultBranch": "main",
   "derived": "6 parts, mostly TypeScript (48 files), CSS (2), Astro (1) and JavaScript (1). Work enters through 4 doors; ci, Deploy site to GitHub Pages, Release and rig-bridge each reach 1 part, and ci is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run rig-bridge.",
   "doors": [
@@ -100,7 +107,7 @@
       "sends": [],
       "stages": [],
       "triggers": [
-        "on a pull request touching 11 paths",
+        "on a pull request",
         "on a push touching 11 paths",
         "or by hand"
       ]
@@ -232,7 +239,7 @@
   "edges": [],
   "engine": "1.24.0",
   "generated": [],
-  "generatedAt": "2026-09-30T22:06:55.364Z",
+  "generatedAt": "2026-10-01T02:12:41.137Z",
   "limits": [
     "9 writes and 46 reads go to a path their caller passes, not to this repository.",
     "2 commands are built at run time and not followed.",
