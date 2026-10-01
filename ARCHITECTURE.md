@@ -70,5 +70,5 @@ Phase 0 surveys: RunHandoff (reference shape only), git-trailers, JSON-Schema co
 ## References
 
 - Source-of-truth handoff doc (with Corrections 2026-04-29 block): the handoff memory file in this workspace
-- Phase 0 plan + wave dispatch sequence: `/Users/michaelfrilot/.claude/plans/rig-bridge-dogfood-handoff-2026-04-29-m-sharded-pie.md`
+- Phase 0 plan + wave dispatch sequence: `/Users/<user>/.claude/plans/rig-bridge-dogfood-handoff-2026-04-29-m-sharded-pie.md`
 - Swarm protocol: `/Volumes/T9-Shared/AI/dogfood-lab/testing-os/swarms/PROTOCOL.md`
