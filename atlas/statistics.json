@@ -110,8 +110,8 @@
         "path": ".github/dependabot.yml"
       },
       {
-        "commits": 14,
-        "lines": 150,
+        "commits": 16,
+        "lines": 176,
         "path": ".github/workflows/ci.yml"
       },
       {
@@ -120,8 +120,8 @@
         "path": ".github/workflows/pages.yml"
       },
       {
-        "commits": 4,
-        "lines": 85,
+        "commits": 6,
+        "lines": 89,
         "path": ".github/workflows/release.yml"
       },
       {
@@ -130,8 +130,8 @@
         "path": ".gitignore"
       },
       {
-        "commits": 2,
-        "lines": 84,
+        "commits": 4,
+        "lines": 88,
         "path": "ARCHITECTURE.md"
       },
       {
@@ -200,8 +200,8 @@
         "path": "SHIP_GATE.md"
       },
       {
-        "commits": 4,
-        "lines": 332,
+        "commits": 6,
+        "lines": 344,
         "path": "atlas/README.md"
       },
       {
@@ -210,18 +210,18 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 4,
-        "lines": 1454,
+        "commits": 6,
+        "lines": 1482,
         "path": "atlas/page.json"
       },
       {
-        "commits": 4,
-        "lines": 1294,
+        "commits": 6,
+        "lines": 1354,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 4,
-        "lines": 8090,
+        "commits": 6,
+        "lines": 8280,
         "path": "atlas/structure.json"
       },
       {
@@ -230,8 +230,8 @@
         "path": "docs/cli-contract.md"
       },
       {
-        "commits": 4,
-        "lines": 398,
+        "commits": 6,
+        "lines": 402,
         "path": "docs/control-plane-integration.md"
       },
       {
@@ -575,9 +575,9 @@
     "level": "low",
     "reason": "fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions"
   },
-  "generatedAt": "2026-09-30T22:06:55.364Z",
+  "generatedAt": "2026-10-01T02:12:41.137Z",
   "generatedFrom": {
-    "commit": "dfb7dd05662767b92cf6b3d320dc0234430a18ed"
+    "commit": "c27c7b040bbf7e64be83f1f14a44de70d08da6cd"
   },
   "pairs": [],
   "parameters": {
@@ -590,16 +590,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "both",
-    "headDate": "2026-09-30T13:40:07-07:00",
+    "headDate": "2026-09-30T18:56:15-07:00",
     "inScopeFiles": 93,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 20,
+    "qualifyingCommits": 22,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-04-03T20:40:07.000Z",
+    "since": "2026-04-04T01:56:15.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",

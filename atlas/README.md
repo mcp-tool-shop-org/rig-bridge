@@ -1,18 +1,19 @@
 # rig-bridge: how it works
 
-Mapped at 2026-09-30 from commit dfb7dd0 by Atlas 1.24.0.
+Mapped at 2026-10-01 from commit c27c7b0 by Atlas 1.24.0.
 
 ## What this is
 
 6 parts, mostly TypeScript (48 files), CSS (2), Astro (1) and JavaScript (1). Work enters through 4 doors; ci, Deploy site to GitHub Pages, Release and rig-bridge each reach 1 part, and ci is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run rig-bridge.
 
-## What changed since 2026-09-30 (204828b)
+## What changed since 2026-09-30 (dfb7dd0)
 
-Nothing structural changed since 2026-09-30; 2 files changed content.
+- ci's pull request trigger no longer names `.github/workflows/**`, `atlas/**`, `docs/**`, `package-lock.json`, `package.json`, `schemas/**`, `site/astro.config.mjs`, `site/package-lock.json`, `site/package.json`, `src/**` and `tsconfig.json`.
+- 3 files changed content, across 3 parts.
 
 ## What comes in
 
-1. **ci.** On a pull request touching 11 paths; on a push touching 11 paths; or by hand. Runs src/cli.ts, src/cli-e2e.test.ts, src/cli.test.ts and 22 more; builds src/.
+1. **ci.** On a pull request; on a push touching 11 paths; or by hand. Runs src/cli.ts, src/cli-e2e.test.ts, src/cli.test.ts and 22 more; builds src/.
 2. **Deploy site to GitHub Pages.** On a push to main touching 2 paths; or by hand. Runs site/astro.config.mjs and site/src/.
 3. **Release.** When a tag matching `v[0-9]+.[0-9]+.[0-9]+` or `v[0-9]+.[0-9]+.[0-9]+-*` is pushed. Runs src/cli.ts, src/cli-e2e.test.ts, src/cli.test.ts and 22 more; builds src/.
 4. **rig-bridge** (a command people run). Runs src/cli.ts.

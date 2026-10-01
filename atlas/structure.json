@@ -13,7 +13,7 @@
           "path": ".github/dependabot.yml"
         },
         {
-          "hash": "60e60b93c1340019ad28a701262d064452c7124f7359302ea67fc26eb999c525",
+          "hash": "80810f08a97ae886feac0aa11cf21aca2820b234d803983b8dbe70bad54b6602",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -48,7 +48,7 @@
           "path": "docs/cli-contract.md"
         },
         {
-          "hash": "4c2ca041cc4a556e8cf3a79108f5f0300bec972a123c3f762262bc467b92e4db",
+          "hash": "bdc7b96cb9a61a31e666ffe1bcee4bfd2a0ab1047552aee20f5f7d079398b449",
           "path": "docs/control-plane-integration.md"
         },
         {
@@ -83,7 +83,7 @@
           "path": ".gitignore"
         },
         {
-          "hash": "29da85be0518df7713c8c10dc3ea7c78e660e346ca4c650e807cbc8c5ad83c32",
+          "hash": "f92ac030c32adc7b02af4e25642aff8029b0f8f58c05f18d3f9eb5b8a2de7b7c",
           "path": "ARCHITECTURE.md"
         },
         {
@@ -2912,20 +2912,7 @@
       ],
       "triggers": [
         {
-          "event": "pull_request",
-          "paths": [
-            ".github/workflows/**",
-            "atlas/**",
-            "docs/**",
-            "package-lock.json",
-            "package.json",
-            "schemas/**",
-            "site/astro.config.mjs",
-            "site/package-lock.json",
-            "site/package.json",
-            "src/**",
-            "tsconfig.json"
-          ]
+          "event": "pull_request"
         },
         {
           "event": "push",
@@ -3504,7 +3491,7 @@
   "edges": [],
   "engine": "1.24.0",
   "generatedFrom": {
-    "commit": "dfb7dd05662767b92cf6b3d320dc0234430a18ed",
+    "commit": "c27c7b040bbf7e64be83f1f14a44de70d08da6cd",
     "tracked": 88
   },
   "landings": [
