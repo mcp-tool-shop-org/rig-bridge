@@ -52,7 +52,7 @@ jobs:
       # advisory it did not touch. Standing debt is printed, not failed.
       - name: Audit dependencies (delta vs base)
         if: github.event_name == 'pull_request'
-        uses: mcp-tool-shop-org/.github/.github/actions/delta-audit@9053d000a0bb778f6b9dcb4450a3508d34a858f8 # v1.0.0
+        uses: mcp-tool-shop-org/.github/.github/actions/delta-audit@4cefdba7225305e3ff5c27db0a522d926461b651 # v1.0.0
         with:
           level: high
       - run: npm run typecheck
