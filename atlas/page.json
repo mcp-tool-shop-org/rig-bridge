@@ -26,30 +26,23 @@
     },
     "items": [
       {
-        "kind": "door",
-        "sentence": "ci's pull request trigger no longer names `.github/workflows/**`, `atlas/**`, `docs/**`, `package-lock.json`, `package.json`, `schemas/**`, `site/astro.config.mjs`, `site/package-lock.json`, `site/package.json`, `src/**` and `tsconfig.json`.",
-        "subjects": [
-          ".github/workflows/ci.yml"
-        ]
-      },
-      {
         "kind": "counts",
-        "sentence": "3 files changed content, across 3 parts.",
+        "sentence": "Nothing structural changed since 2026-10-01; 3 files changed content.",
         "subjects": []
       }
     ],
     "since": {
-      "commit": "dfb7dd05662767b92cf6b3d320dc0234430a18ed",
-      "generatedAt": "2026-09-30T22:06:55.364Z"
+      "commit": "c27c7b040bbf7e64be83f1f14a44de70d08da6cd",
+      "generatedAt": "2026-10-01T02:12:41.137Z"
     },
-    "unchanged": false
+    "unchanged": true
   },
   "changesTogether": [],
   "changesTogetherNote": [
     "Window: 180 days; a pair counts from 3 shared commits, since the window holds fewer than 30 qualifying commits."
   ],
   "changesTogetherWithTests": 0,
-  "commit": "c27c7b040bbf7e64be83f1f14a44de70d08da6cd",
+  "commit": "012aa48de275d3c5cd2657fbf75e32c0ff74c2ff",
   "defaultBranch": "main",
   "derived": "6 parts, mostly TypeScript (48 files), CSS (2), Astro (1) and JavaScript (1). Work enters through 4 doors; ci, Deploy site to GitHub Pages, Release and rig-bridge each reach 1 part, and ci is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run rig-bridge.",
   "doors": [
@@ -237,9 +230,9 @@
   "duplicatesLead": null,
   "duplicatesNote": [],
   "edges": [],
-  "engine": "1.24.0",
+  "engine": "1.26.0",
   "generated": [],
-  "generatedAt": "2026-10-01T02:12:41.137Z",
+  "generatedAt": "2026-11-11T22:35:34.152Z",
   "limits": [
     "9 writes and 46 reads go to a path their caller passes, not to this repository.",
     "2 commands are built at run time and not followed.",
@@ -591,16 +584,33 @@
       ]
     }
   ],
+  "startBeside": [
+    {
+      "files": [
+        "src/commands/new.ts",
+        "src/commands/send.ts",
+        "src/commands/close.ts",
+        "src/commands/status.ts",
+        "src/commands/thread.ts",
+        "src/commands/sync.ts",
+        "src/commands/relay.ts"
+      ],
+      "from": "src/cli.ts"
+    },
+    {
+      "files": [
+        "src/engine/git.ts"
+      ],
+      "from": "src/commands/init.ts"
+    }
+  ],
   "startDoor": ".github/workflows/ci.yml",
   "startHere": [
     ".github/workflows/ci.yml",
     "src/cli.ts",
     "src/commands/init.ts",
-    "src/commands/new.ts",
-    "src/commands/send.ts",
-    "src/commands/close.ts",
-    "src/commands/status.ts",
-    "src/commands/thread.ts"
+    "src/engine/config.ts",
+    "src/engine/rig-id.ts"
   ],
   "summary": null,
   "summaryFrom": null,
@@ -608,6 +618,7 @@
   "testedBy": {
     "src": 24
   },
+  "testedCodeParts": 1,
   "unnamedWrites": 0,
   "unread": [],
   "unreadFiles": 0,
