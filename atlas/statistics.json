@@ -97,7 +97,7 @@
       "confidence": "low",
       "highWater": null,
       "name": "src",
-      "qualifyingSourceCommits": 4,
+      "qualifyingSourceCommits": 0,
       "rebaseline": null
     }
   ],
@@ -105,103 +105,78 @@
     "definition": "commits is how many commits in the window touch the file, including merges and commits dropped from coupling. lines is added plus deleted in those commits.",
     "files": [
       {
-        "commits": 2,
-        "lines": 44,
+        "commits": 1,
+        "lines": 6,
         "path": ".github/dependabot.yml"
       },
       {
-        "commits": 16,
-        "lines": 176,
+        "commits": 17,
+        "lines": 123,
         "path": ".github/workflows/ci.yml"
       },
       {
-        "commits": 3,
-        "lines": 64,
+        "commits": 2,
+        "lines": 14,
         "path": ".github/workflows/pages.yml"
       },
       {
-        "commits": 6,
-        "lines": 89,
+        "commits": 5,
+        "lines": 16,
         "path": ".github/workflows/release.yml"
       },
       {
         "commits": 2,
-        "lines": 22,
-        "path": ".gitignore"
-      },
-      {
-        "commits": 4,
-        "lines": 88,
+        "lines": 4,
         "path": "ARCHITECTURE.md"
       },
       {
-        "commits": 5,
-        "lines": 105,
+        "commits": 1,
+        "lines": 13,
         "path": "CHANGELOG.md"
       },
       {
         "commits": 1,
-        "lines": 21,
-        "path": "LICENSE"
-      },
-      {
-        "commits": 2,
-        "lines": 223,
+        "lines": 67,
         "path": "README.es.md"
       },
       {
-        "commits": 2,
-        "lines": 199,
+        "commits": 1,
+        "lines": 43,
         "path": "README.fr.md"
       },
       {
-        "commits": 2,
-        "lines": 249,
+        "commits": 1,
+        "lines": 93,
         "path": "README.hi.md"
       },
       {
-        "commits": 2,
-        "lines": 199,
+        "commits": 1,
+        "lines": 43,
         "path": "README.it.md"
       },
       {
-        "commits": 2,
-        "lines": 199,
+        "commits": 1,
+        "lines": 43,
         "path": "README.ja.md"
       },
       {
-        "commits": 5,
-        "lines": 233,
+        "commits": 1,
+        "lines": 33,
         "path": "README.md"
       },
       {
-        "commits": 2,
-        "lines": 199,
+        "commits": 1,
+        "lines": 43,
         "path": "README.pt-BR.md"
       },
       {
-        "commits": 2,
-        "lines": 265,
+        "commits": 1,
+        "lines": 109,
         "path": "README.zh.md"
       },
       {
-        "commits": 1,
-        "lines": 49,
-        "path": "SCORECARD.md"
-      },
-      {
-        "commits": 2,
-        "lines": 58,
-        "path": "SECURITY.md"
-      },
-      {
-        "commits": 2,
-        "lines": 151,
-        "path": "SHIP_GATE.md"
-      },
-      {
-        "commits": 6,
-        "lines": 344,
+        "commits": 9,
+        "lines": 373,
         "path": "atlas/README.md"
       },
       {
@@ -210,364 +185,54 @@
         "path": "atlas/boundaries.yaml"
       },
       {
-        "commits": 6,
-        "lines": 1482,
+        "commits": 9,
+        "lines": 1581,
         "path": "atlas/page.json"
       },
       {
-        "commits": 6,
-        "lines": 1354,
+        "commits": 9,
+        "lines": 1476,
         "path": "atlas/statistics.json"
       },
       {
-        "commits": 6,
-        "lines": 8280,
+        "commits": 9,
+        "lines": 8336,
         "path": "atlas/structure.json"
       },
       {
-        "commits": 1,
-        "lines": 125,
-        "path": "docs/cli-contract.md"
-      },
-      {
-        "commits": 6,
-        "lines": 402,
+        "commits": 2,
+        "lines": 4,
         "path": "docs/control-plane-integration.md"
       },
       {
-        "commits": 4,
-        "lines": 352,
-        "path": "docs/envelope-spec.md"
-      },
-      {
         "commits": 2,
-        "lines": 161,
-        "path": "docs/v1.1-roadmap.md"
-      },
-      {
-        "commits": 4,
-        "lines": 3209,
+        "lines": 1592,
         "path": "package-lock.json"
       },
       {
-        "commits": 7,
-        "lines": 81,
+        "commits": 2,
+        "lines": 6,
         "path": "package.json"
       },
       {
-        "commits": 4,
-        "lines": 144,
-        "path": "schemas/bridge-message.schema.json"
-      },
-      {
-        "commits": 2,
-        "lines": 35,
+        "commits": 1,
+        "lines": 5,
         "path": "site/astro.config.mjs"
       },
       {
-        "commits": 2,
-        "lines": 13872,
+        "commits": 3,
+        "lines": 5962,
         "path": "site/package-lock.json"
       },
       {
-        "commits": 2,
-        "lines": 24,
+        "commits": 1,
+        "lines": 6,
         "path": "site/package.json"
-      },
-      {
-        "commits": 1,
-        "lines": 7,
-        "path": "site/src/content.config.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 70,
-        "path": "site/src/content/docs/handbook/architecture.md"
-      },
-      {
-        "commits": 1,
-        "lines": 119,
-        "path": "site/src/content/docs/handbook/getting-started.md"
-      },
-      {
-        "commits": 1,
-        "lines": 31,
-        "path": "site/src/content/docs/handbook/index.md"
-      },
-      {
-        "commits": 1,
-        "lines": 109,
-        "path": "site/src/content/docs/handbook/reference.md"
-      },
-      {
-        "commits": 1,
-        "lines": 137,
-        "path": "site/src/content/docs/handbook/usage.md"
-      },
-      {
-        "commits": 1,
-        "lines": 33,
-        "path": "site/src/pages/index.astro"
-      },
-      {
-        "commits": 1,
-        "lines": 102,
-        "path": "site/src/site-config.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 3,
-        "path": "site/src/styles/global.css"
-      },
-      {
-        "commits": 1,
-        "lines": 5,
-        "path": "site/src/styles/starlight-custom.css"
-      },
-      {
-        "commits": 1,
-        "lines": 5,
-        "path": "site/tsconfig.json"
-      },
-      {
-        "commits": 2,
-        "lines": 370,
-        "path": "src/cli-e2e.test.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 300,
-        "path": "src/cli.test.ts"
-      },
-      {
-        "commits": 3,
-        "lines": 626,
-        "path": "src/cli.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 199,
-        "path": "src/commands/close.test.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 323,
-        "path": "src/commands/close.ts"
-      },
-      {
-        "commits": 3,
-        "lines": 204,
-        "path": "src/commands/init.test.ts"
-      },
-      {
-        "commits": 3,
-        "lines": 192,
-        "path": "src/commands/init.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 128,
-        "path": "src/commands/new.test.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 105,
-        "path": "src/commands/new.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 481,
-        "path": "src/commands/relay.test.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 565,
-        "path": "src/commands/relay.ts"
-      },
-      {
-        "commits": 3,
-        "lines": 310,
-        "path": "src/commands/send.test.ts"
-      },
-      {
-        "commits": 3,
-        "lines": 331,
-        "path": "src/commands/send.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 347,
-        "path": "src/commands/status.test.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 334,
-        "path": "src/commands/status.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 392,
-        "path": "src/commands/sync.test.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 232,
-        "path": "src/commands/sync.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 270,
-        "path": "src/commands/thread.test.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 309,
-        "path": "src/commands/thread.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 483,
-        "path": "src/cross-rig.test.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 168,
-        "path": "src/engine/body-hash.test.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 50,
-        "path": "src/engine/body-hash.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 95,
-        "path": "src/engine/config.test.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 111,
-        "path": "src/engine/config.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 94,
-        "path": "src/engine/envelope.test.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 123,
-        "path": "src/engine/envelope.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 338,
-        "path": "src/engine/git-diff.test.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 287,
-        "path": "src/engine/git-diff.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 382,
-        "path": "src/engine/git.test.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 231,
-        "path": "src/engine/git.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 95,
-        "path": "src/engine/index.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 409,
-        "path": "src/engine/peer-rigs.test.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 136,
-        "path": "src/engine/peer-rigs.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 116,
-        "path": "src/engine/rig-id.test.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 76,
-        "path": "src/engine/rig-id.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 189,
-        "path": "src/engine/schema-validator.test.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 84,
-        "path": "src/engine/schema-validator.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 114,
-        "path": "src/engine/status.test.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 69,
-        "path": "src/engine/status.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 490,
-        "path": "src/engine/threads.test.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 221,
-        "path": "src/engine/threads.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 332,
-        "path": "src/engine/validate-file.test.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 188,
-        "path": "src/engine/validate-file.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 252,
-        "path": "src/engine/verify-hash.test.ts"
-      },
-      {
-        "commits": 1,
-        "lines": 54,
-        "path": "src/engine/verify-hash.ts"
-      },
-      {
-        "commits": 2,
-        "lines": 233,
-        "path": "src/smoke.test.ts"
       },
       {
         "commits": 1,
         "lines": 17,
         "path": "tsconfig.build.json"
-      },
-      {
-        "commits": 1,
-        "lines": 24,
-        "path": "tsconfig.json"
       }
     ]
   },
@@ -575,11 +240,54 @@
     "level": "low",
     "reason": "fewer than 30 qualifying commits in the window, and fewer than 25 source files reach 10 revisions"
   },
-  "generatedAt": "2026-10-01T02:12:41.137Z",
+  "generatedAt": "2026-11-12T00:43:02.206Z",
   "generatedFrom": {
-    "commit": "c27c7b040bbf7e64be83f1f14a44de70d08da6cd"
+    "commit": "4b069009d77895fd57df77595265233ed8c4edd5"
   },
-  "pairs": [],
+  "pairs": [
+    {
+      "a": "atlas/README.md",
+      "b": "atlas/page.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/README.md",
+      "b": "atlas/statistics.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/README.md",
+      "b": "atlas/structure.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/page.json",
+      "b": "atlas/statistics.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/page.json",
+      "b": "atlas/structure.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    },
+    {
+      "a": "atlas/statistics.json",
+      "b": "atlas/structure.json",
+      "either": 5,
+      "shared": 5,
+      "strength": 1
+    }
+  ],
   "parameters": {
     "appliedChangesetLimit": 23.25,
     "changeset": 50,
@@ -590,16 +298,16 @@
     "floor": "fallen",
     "floorHeld": false,
     "floorTrigger": "both",
-    "headDate": "2026-09-30T18:56:15-07:00",
+    "headDate": "2026-11-11T17:35:38-05:00",
     "inScopeFiles": 93,
     "pinnedStart": null,
     "priorFloor": "fallen",
-    "qualifyingCommits": 22,
+    "qualifyingCommits": 19,
     "qualifyingMinimum": 30,
     "revisions": 5,
     "shared": 10,
     "sharedFloorUsed": 3,
-    "since": "2026-04-04T01:56:15.000Z",
+    "since": "2026-05-15T22:35:38.000Z",
     "sourceExtensions": [
       ".js",
       ".mjs",

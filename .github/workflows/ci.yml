@@ -37,7 +37,7 @@ jobs:
           node-version: 22
           cache: "npm"
       - name: Atlas check
-        run: npx --yes @dogfood-lab/atlas@1.24.0 check
+        run: npx --yes @dogfood-lab/atlas@1.26.0 check
       - run: npm ci
       - name: Audit dependencies
         # On a push to main: the absolute audit, exactly as before.

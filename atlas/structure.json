@@ -13,7 +13,7 @@
           "path": ".github/dependabot.yml"
         },
         {
-          "hash": "80810f08a97ae886feac0aa11cf21aca2820b234d803983b8dbe70bad54b6602",
+          "hash": "2856146378e6f1924dc92e967a4392ff0967f794977dcc465ac378faab188b0a",
           "path": ".github/workflows/ci.yml"
         },
         {
@@ -139,7 +139,7 @@
           "path": "SHIP_GATE.md"
         },
         {
-          "hash": "0d8a354cae4ebb84cba13bf8cbc662f64e8e9518ec3c50c4518d7b77b8981983",
+          "hash": "ddc3050f75f8d1b0640776793f643710cc0644aed613967ff10884f0ac71f464",
           "path": "package-lock.json"
         },
         {
@@ -202,7 +202,7 @@
           "path": "site/astro.config.mjs"
         },
         {
-          "hash": "af5d4f54dca60686724d306eb58759fb25b6f5ba4d66559ab84a968112a184e5",
+          "hash": "0607a19c4f60b635244a906c7ad2424359b50e20c4a83bc140f202abce4a941e",
           "path": "site/package-lock.json"
         },
         {
@@ -3489,9 +3489,9 @@
     }
   ],
   "edges": [],
-  "engine": "1.24.0",
+  "engine": "1.26.0",
   "generatedFrom": {
-    "commit": "c27c7b040bbf7e64be83f1f14a44de70d08da6cd",
+    "commit": "4b069009d77895fd57df77595265233ed8c4edd5",
     "tracked": 88
   },
   "landings": [
