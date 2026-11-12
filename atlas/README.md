@@ -1,14 +1,14 @@
 # rig-bridge: how it works
 
-Mapped at 2026-11-11 from commit 012aa48 by Atlas 1.26.0.
+Mapped at 2026-11-12 from commit 4b06900 by Atlas 1.26.0.
 
 ## What this is
 
 6 parts, mostly TypeScript (48 files), CSS (2), Astro (1) and JavaScript (1). Work enters through 4 doors; ci, Deploy site to GitHub Pages, Release and rig-bridge each reach 1 part, and ci is followed because a pull request goes through it. It publishes to npm. It deploys a site to GitHub Pages. People run rig-bridge.
 
-## What changed since 2026-10-01 (c27c7b0)
+## What changed since 2026-11-11 (012aa48)
 
-Nothing structural changed since 2026-10-01; 3 files changed content.
+Nothing structural changed since 2026-11-11; 1 file changed content.
 
 ## What comes in
 
