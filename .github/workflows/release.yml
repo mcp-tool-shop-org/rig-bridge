@@ -2,7 +2,7 @@ name: Release
 
 # Fires on git tags shaped like v1.0.0, v1.0.1, v1.1.0, etc.
 # - Builds + verifies (typecheck + tests).
-# - Publishes to npm with --provenance (uses NPM_TOKEN secret).
+# - Publishes to npm with --provenance via OIDC Trusted Publishing (no token).
 # - Creates a GitHub Release with auto-generated notes.
 
 on:
@@ -60,10 +60,14 @@ jobs:
             exit 1
           fi
 
-      - name: Publish to npm (with provenance)
+      # OIDC trusted publishing requires npm >= 11.5.1; Node 22 bundles
+      # npm 10.9.x, so upgrade the global npm before the publish call.
+      - name: Upgrade npm for OIDC trusted publishing (>= 11.5.1)
+        run: npm install -g npm@latest
+
+      - name: Publish to npm with Sigstore provenance
+        # Auth via npm Trusted Publishing (OIDC) - intentionally NO NODE_AUTH_TOKEN.
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         env:
